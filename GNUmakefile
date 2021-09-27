@@ -147,6 +147,9 @@ QEMUOPTS += $(QEMUEXTRA)
 .gdbinit: .gdbinit.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
 
+run:
+	tmuxinator start -p ./tmux.yml
+
 gdb:
 	gdb -n -x .gdbinit
 
