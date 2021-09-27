@@ -14,9 +14,13 @@ define hook-stop
     end
     # Translate the segment:offset into a physical address
     printf "[%4x:%4x] ", $cs, $eip
-    x/i $cs*16+$eip
+    x/5i $cs*16+$eip
   end
   set $lastcs = $cs
+end
+
+define di
+  x/100i $cs*16+$eip
 end
 
 echo + target remote localhost:1234\n
