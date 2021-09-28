@@ -58,14 +58,21 @@ int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
 	cprintf("Stack backtrace:\n");
-	uint32_t * ebp = (uint32_t*)read_ebp();
+	struct Eipdebuginfo info;
+	volatile uint32_t * ebp = (uint32_t*)read_ebp(), eip;
 	do {
-		cprintf("ebp %08x eip %08x args %08x %08x %08x %08x\n",
-			ebp, *(ebp + 1), *(ebp + 2), *(ebp + 3), *(ebp + 4), *(ebp + 5));
+		eip = *(ebp + 1);
+		debuginfo_eip(eip - 4, &info);
+		cprintf("  ebp %08x eip %08x args %08x %08x %08x %08x\n",
+			ebp, eip, *(ebp + 2), *(ebp + 3), *(ebp + 4), *(ebp + 5));
+		cprintf("        %s:%d: ", info.eip_file, info.eip_line);
+		for(int i = 0; i < info.eip_fn_namelen; i++) {
+			cputchar(info.eip_fn_name[i]);
+		}
+		cprintf("+%d\n", eip - info.eip_fn_addr);
+		if(ebp == NULL) break;
 		ebp = (uint32_t*)*ebp;
 	} while(ebp);
-	cprintf("ebp %08x eip %08x args %08x %08x %08x %08x\n",
-		ebp, *(ebp + 1), *(ebp + 2), *(ebp + 3), *(ebp + 4), *(ebp + 5));
 	return 0;
 }
 
@@ -92,6 +99,7 @@ runcmd(char *buf, struct Trapframe *tf)
 			*buf++ = 0;
 		if (*buf == 0)
 			break;
+
 
 		// save and scan past next arg
 		if (argc == MAXARGS-1) {
