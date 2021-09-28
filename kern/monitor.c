@@ -35,8 +35,7 @@ static struct Command commands[] = {
 int
 mon_exercise_8(int argc, char ** argv, struct Trapframe * tf)
 {
-    unsigned int i = 0x00646c72;
-    cprintf("H%x Wo%s", 57616, &i);
+    cprintf("x=%d y=%d", 3);
 	return 0;
 }
 
