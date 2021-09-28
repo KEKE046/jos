@@ -20,13 +20,26 @@ struct Command {
 	// return -1 to force monitor to exit
 	int (*func)(int argc, char** argv, struct Trapframe* tf);
 };
+int
+mon_exercise_8(int argc, char ** argv, struct Trapframe * tf);
 
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "m", "ME", mon_exercise_8},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
+
+
+int
+mon_exercise_8(int argc, char ** argv, struct Trapframe * tf)
+{
+	int x = 1, y = 3, z = 4;
+	cprintf("x %d, y %x, z %d\n", x, y, z);
+	return 0;
+}
+
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)

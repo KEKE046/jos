@@ -13,11 +13,22 @@ putch(int ch, int *cnt)
 	*cnt++;
 }
 
+int _cons_putc(int c);
+
 int
 vcprintf(const char *fmt, va_list ap)
 {
 	int cnt = 0;
-
+	_cons_putc('v');
+	_cons_putc('c');
+	_cons_putc('p');
+	_cons_putc('r');
+	_cons_putc('i');
+	_cons_putc('n');
+	_cons_putc('t');
+	_cons_putc('f');
+	_cons_putc('\r');
+	_cons_putc('\n');
 	vprintfmt((void*)putch, &cnt, fmt, ap);
 	return cnt;
 }

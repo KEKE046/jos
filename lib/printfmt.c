@@ -8,6 +8,9 @@
 #include <inc/stdarg.h>
 #include <inc/error.h>
 
+void
+_cons_putc(int c);
+
 /*
  * Space or zero padding and a field width are supported for the numeric
  * formats only.
@@ -54,6 +57,13 @@ printnum(void (*putch)(int, void*), void *putdat,
 static unsigned long long
 getuint(va_list *ap, int lflag)
 {
+	_cons_putc('v');
+	_cons_putc('a');
+	_cons_putc('a');
+	_cons_putc('r');
+	_cons_putc('g');
+	_cons_putc('\r');
+	_cons_putc('\n');
 	if (lflag >= 2)
 		return va_arg(*ap, unsigned long long);
 	else if (lflag)
@@ -67,6 +77,13 @@ getuint(va_list *ap, int lflag)
 static long long
 getint(va_list *ap, int lflag)
 {
+	_cons_putc('v');
+	_cons_putc('a');
+	_cons_putc('a');
+	_cons_putc('r');
+	_cons_putc('g');
+	_cons_putc('\r');
+	_cons_putc('\n');
 	if (lflag >= 2)
 		return va_arg(*ap, long long);
 	else if (lflag)
@@ -133,6 +150,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 			goto process_precision;
 
 		case '*':
+			_cons_putc('v');
 			precision = va_arg(ap, int);
 			goto process_precision;
 
@@ -157,11 +175,13 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		// character
 		case 'c':
+			_cons_putc('v');
 			putch(va_arg(ap, int), putdat);
 			break;
 
 		// error message
 		case 'e':
+			_cons_putc('v');
 			err = va_arg(ap, int);
 			if (err < 0)
 				err = -err;
@@ -173,6 +193,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 
 		// string
 		case 's':
+			_cons_putc('v');
 			if ((p = va_arg(ap, char *)) == NULL)
 				p = "(null)";
 			if (width > 0 && padc != '-')
@@ -215,6 +236,7 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		case 'p':
 			putch('0', putdat);
 			putch('x', putdat);
+			_cons_putc('v');
 			num = (unsigned long long)
 				(uintptr_t) va_arg(ap, void *);
 			base = 16;
