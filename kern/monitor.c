@@ -24,9 +24,42 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "colortest", "Test the console color", mon_color_test},
+	{ "clear", "Clear the screen", mon_clear},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
+
+int
+mon_color_test(int argc, char ** argv, struct Trapframe * tf) {
+	static const int forecolor[] = {
+		30, 31, 32, 33, 34, 35, 36, 37,
+		90, 91, 92, 93, 94, 95, 96, 97
+	};
+	static const int backcolor[] = {
+		40, 41, 42, 43, 44, 45, 46, 47,
+		100, 101, 102, 103, 104, 105, 106, 107
+	};
+	cprintf("     ");
+	for(int j = 0 ; j < 16; j++) {
+		cprintf("%4d ", j);
+	}
+	cprintf("\n");
+	for(int i = 0; i < 16; i++) {
+		cprintf("%4d ", i);
+		for(int j = 0; j < 16; j++) {
+			cprintf("\033[%d;%dmTEST\033[0m ", backcolor[j], forecolor[i]);
+		}
+		cprintf("\n");
+	}
+	return 0;
+}
+
+int
+mon_clear(int argc, char ** argv, struct Trapframe * tf) {
+	cprintf("\033[J");
+	return 0;
+}
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
@@ -57,7 +90,22 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+	cprintf("Stack backtrace:\n");
+	struct Eipdebuginfo info;
+	volatile uint32_t * ebp = (uint32_t*)read_ebp(), eip;
+	do {
+		eip = *(ebp + 1);
+		debuginfo_eip(eip - 4, &info);
+		cprintf("  ebp %08x eip %08x args %08x %08x %08x %08x\n",
+			ebp, eip, *(ebp + 2), *(ebp + 3), *(ebp + 4), *(ebp + 5));
+		cprintf("        %s:%d: ", info.eip_file, info.eip_line);
+		for(int i = 0; i < info.eip_fn_namelen; i++) {
+			cputchar(info.eip_fn_name[i]);
+		}
+		cprintf("+%d\n", eip - info.eip_fn_addr);
+		if(ebp == NULL) break;
+		ebp = (uint32_t*)*ebp;
+	} while(ebp);
 	return 0;
 }
 
@@ -84,6 +132,7 @@ runcmd(char *buf, struct Trapframe *tf)
 			*buf++ = 0;
 		if (*buf == 0)
 			break;
+
 
 		// save and scan past next arg
 		if (argc == MAXARGS-1) {
