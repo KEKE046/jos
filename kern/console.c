@@ -135,7 +135,6 @@ struct ANSIContext {
 	bool is_escaping;
 	int args[8];
 	int acnt;
-	int bufptr;
 	uint16_t saved_pos;
 } crt_ctx;
 
@@ -203,7 +202,7 @@ void cga_set_graphical_mode(int modecode) {
 		crt_ctx.mode &= 0xf000;
 		crt_ctx.mode |= modecode << 8;
 	}
-	else if(40 <= modecode && modecode < 38) {
+	else if(40 <= modecode && modecode < 48) {
 		modecode -= 40;
 		crt_ctx.mode &= 0x0f00;
 		crt_ctx.mode |= modecode << 12;
@@ -231,6 +230,8 @@ cga_init(void)
 	unsigned pos;
 
 	crt_ctx.mode = 0x0700;
+	crt_ctx.is_escaping = false;
+	crt_ctx.last_esc = false;
 
 	cp = (uint16_t*) (KERNBASE + CGA_BUF);
 	was = *cp;

@@ -23,7 +23,16 @@ struct Command {
 
 int mon_test(int argc, char ** argv, struct Trapframe * tf) {
 	for(int i = 0; i < 8; i++) {
-		cprintf("\x1b[%dmTEST\x1b[0m");
+		cprintf("\x1b[%dmTEST\x1b[0m", 30 + i);
+	}
+	for(int i = 0; i < 8; i++) {
+		cprintf("\x1b[%dmTEST\x1b[0m", 90 + i);
+	}
+	for(int i = 0; i < 8; i++) {
+		cprintf("\x1b[%dmTEST\x1b[0m", 40 + i);
+	}
+	for(int i = 0; i < 8; i++) {
+		cprintf("\x1b[%dmTEST\x1b[0m", 100 + i);
 	}
 	return 0;
 }
