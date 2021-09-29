@@ -129,12 +129,159 @@ static unsigned addr_6845;
 static uint16_t *crt_buf;
 static uint16_t crt_pos;
 
+struct ANSIContext {
+	int mode;
+	bool is_escaping;
+	int args[8];
+	int acnt;
+	char buf[5];
+	uint16_t saved_pos;
+} crt_ctx;
+
+void cga_set_cursor_pos(int PL, int Pc) {
+	uint16_t target = PL * CRT_COLS + Pc;
+	if(target < CRT_SIZE) crt_pos = target;
+}
+
+void cga_cursor_up(int Pn) {
+	uint16_t target = crt_pos - Pn * CRT_COLS;
+	if(target < CRT_SIZE) crt_pos = target;
+}
+
+void cga_cursor_down(int Pn) {
+	uint16_t target = crt_pos + Pn * CRT_COLS;
+	if(target < CRT_SIZE) crt_pos = target;
+}
+
+void cga_cursor_backward(int Pn) {
+	uint16_t target = crt_pos - 1;
+	if(target < CRT_SIZE) crt_pos = target;
+}
+
+void cga_cursor_forward(int Pn) {
+	uint16_t target = crt_pos + 1;
+	if(target < CRT_SIZE) crt_pos = target;
+}
+
+void cga_save_cursor_position() {
+	crt_ctx.saved_pos = crt_pos;
+}
+
+void cga_restore_cursor_position() {
+	uint16_t target = crt_ctx.saved_pos;
+	if(target < CRT_SIZE) crt_pos = target;
+}
+
+void cga_erase_display() {
+	for(uint16_t i = 0; i < CRT_SIZE; i++) {
+		crt_buf[i] = crt_ctx.mode | ' ';
+	}
+	crt_pos = 0;
+}
+
+void cga_erase_line() {
+	uint16_t ed = crt_pos - crt_pos % CRT_ROWS + CRT_ROWS;
+	for(uint16_t i = crt_pos; i < ed; i++) {
+		crt_buf[i] = crt_ctx.mode | ' ';
+	}
+}
+
+void cga_set_graphical_mode(int modecode) {
+	if(30 <= modecode && modecode < 38) {
+		modecode -= 30;
+		crt_ctx.mode &= 0xf000;
+		crt_ctx.mode |= modecode << 8;
+	}
+	else if(90 <= modecode && modecode < 98) {
+		modecode -= 90;
+		crt_ctx.mode &= 0xf000;
+		crt_ctx.mode |= modecode << 8;
+	}
+	else if(40 <= modecode && modecode < 38) {
+		modecode -= 40;
+		crt_ctx.mode &= 0x0f00;
+		crt_ctx.mode |= modecode << 12;
+	}
+	else if(100 <= modecode && modecode < 107) {
+		modecode -= 100;
+		crt_ctx.mode &= 0x0f00;
+		crt_ctx.mode |= modecode << 12;
+	}
+}
+
+void cga_set_mode(int modecode) {
+
+}
+
+void cga_reset_mode() {
+
+}
+
+const char * cons_ansi_translate(int c) {
+	c &= 0xff;
+	if(crt_ctx.buf[0] == 0x1b) {
+		if(c == '[') {
+			crt_ctx.is_escaping = true;
+			crt_ctx.acnt = 0;
+			crt_ctx.args[0] = 0;
+			crt_ctx.buf[0] = 0;
+			return crt_ctx.buf;
+		}
+		else {
+			crt_ctx.buf[1] = '[';
+			crt_ctx.buf[0] = 0;
+			return crt_ctx.buf;
+		}
+	}
+	else if(crt_ctx.is_escaping) {
+		switch(c) {
+			case '0': case '1': case '2': case '3': case '4':
+			case '5': case '6': case '7': case '8': case '9':
+			crt_ctx.args[crt_ctx.acnt] = crt_ctx.args[crt_ctx.acnt] * 10 + c - '0';
+			break;
+
+			case ';':
+			if(crt_ctx.acnt < 7)
+				crt_ctx.args[crt_ctx.acnt] = 0;
+			break;
+
+			case 'H':
+			case 'f': cga_set_cursor_pos(crt_ctx.args[0], crt_ctx.args[1]); goto crt_ansi_cmd_finish;
+			case 'A': cga_cursor_up(crt_ctx.args[0]); goto crt_ansi_cmd_finish;
+			case 'B': cga_cursor_down(crt_ctx.args[0]); goto crt_ansi_cmd_finish;
+			case 'C': cga_cursor_forward(crt_ctx.args[0]); goto crt_ansi_cmd_finish;
+			case 'D': cga_cursor_backward(crt_ctx.args[0]); goto crt_ansi_cmd_finish;
+			case 's': cga_save_cursor_position(); goto crt_ansi_cmd_finish;
+			case 'u': cga_restore_cursor_position(); goto crt_ansi_cmd_finish;
+			case 'J': cga_erase_display(); goto crt_ansi_cmd_finish;
+			case 'K': cga_erase_line(); goto crt_ansi_cmd_finish;
+			case 'm': for(int i = 0; i <= crt_ctx.acnt; i++) cga_set_graphical_mode(crt_ctx.args[i]); break;
+			case '=': goto crt_ansi_cmd_finish;
+			case 'h': cga_set_mode(crt_ctx.args[0]); goto crt_ansi_cmd_finish;
+			case 'l': cga_reset_mode(); goto crt_ansi_cmd_finish;
+
+			default:
+			crt_ansi_cmd_finish:
+			crt_ctx.is_escaping = false;
+		}
+		crt_ctx.buf[0] = 0;
+		return crt_ctx.buf;
+	}
+	else {
+		crt_ctx.buf[0] = c;
+		crt_ctx.buf[1] = 0;
+		return crt_ctx.buf;
+	}
+}
+
 static void
 cga_init(void)
 {
 	volatile uint16_t *cp;
 	uint16_t was;
 	unsigned pos;
+
+	crt_ctx.mode = 0;
 
 	cp = (uint16_t*) (KERNBASE + CGA_BUF);
 	was = *cp;
@@ -162,45 +309,46 @@ cga_init(void)
 static void
 cga_putc(int c)
 {
-	// if no attribute given, then use black on white
-	if (!(c & ~0xFF))
-		c |= 0x0700;
+	for(const char * p = cons_ansi_translate(c); *p; p++) {
+		// if no attribute given, then use black on white
+		// if (!(c & ~0xFF))
+		// 	c |= 0x0700;
 
-	switch (c & 0xff) {
-	case '\b':
-		if (crt_pos > 0) {
-			crt_pos--;
-			crt_buf[crt_pos] = (c & ~0xff) | ' ';
+		switch (c & 0xff) {
+		case '\b':
+			if (crt_pos > 0) {
+				crt_pos--;
+				crt_buf[crt_pos] = (c & ~0xff) | ' ';
+			}
+			break;
+		case '\n':
+			crt_pos += CRT_COLS;
+			/* fallthru */
+		case '\r':
+			crt_pos -= (crt_pos % CRT_COLS);
+			break;
+		case '\t':
+			cons_putc(' ');
+			cons_putc(' ');
+			cons_putc(' ');
+			cons_putc(' ');
+			cons_putc(' ');
+			break;
+		default:
+			crt_buf[crt_pos++] = c;		/* write the character */
+			break;
 		}
-		break;
-	case '\n':
-		crt_pos += CRT_COLS;
-		/* fallthru */
-	case '\r':
-		crt_pos -= (crt_pos % CRT_COLS);
-		break;
-	case '\t':
-		cons_putc(' ');
-		cons_putc(' ');
-		cons_putc(' ');
-		cons_putc(' ');
-		cons_putc(' ');
-		break;
-	default:
-		crt_buf[crt_pos++] = c;		/* write the character */
-		break;
+
+		// What is the purpose of this?
+		if (crt_pos >= CRT_SIZE) {
+			int i;
+
+			memmove(crt_buf, crt_buf + CRT_COLS, (CRT_SIZE - CRT_COLS) * sizeof(uint16_t));
+			for (i = CRT_SIZE - CRT_COLS; i < CRT_SIZE; i++)
+				crt_buf[i] = 0x0700 | ' ';
+			crt_pos -= CRT_COLS;
+		}
 	}
-
-	// What is the purpose of this?
-	if (crt_pos >= CRT_SIZE) {
-		int i;
-
-		memmove(crt_buf, crt_buf + CRT_COLS, (CRT_SIZE - CRT_COLS) * sizeof(uint16_t));
-		for (i = CRT_SIZE - CRT_COLS; i < CRT_SIZE; i++)
-			crt_buf[i] = 0x0700 | ' ';
-		crt_pos -= CRT_COLS;
-	}
-
 	/* move that little blinky thing */
 	outb(addr_6845, 14);
 	outb(addr_6845 + 1, crt_pos >> 8);
