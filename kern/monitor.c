@@ -21,9 +21,17 @@ struct Command {
 	int (*func)(int argc, char** argv, struct Trapframe* tf);
 };
 
+int mon_test(int argc, char ** argv, struct Trapframe * tf) {
+	for(int i = 0; i < 8; i++) {
+		cprintf("\x1b[%dmTEST\x1b[0m");
+	}
+	return 0;
+}
+
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "t", "test", mon_test},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
