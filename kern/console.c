@@ -215,11 +215,11 @@ void cga_set_graphical_mode(int modecode) {
 }
 
 void cga_set_mode(int modecode) {
-
+	panic("cga_set_mode not implemented");
 }
 
 void cga_reset_mode() {
-
+	panic("cga_reset_mode not implemented");
 }
 
 static void
