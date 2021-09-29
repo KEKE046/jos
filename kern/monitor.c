@@ -25,6 +25,7 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "colortest", "Test the console color", mon_color_test},
+	{ "clear", "Clear the screen", mon_clear},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -51,6 +52,12 @@ mon_color_test(int argc, char ** argv, struct Trapframe * tf) {
 		}
 		cprintf("\n");
 	}
+	return 0;
+}
+
+int
+mon_clear(int argc, char ** argv, struct Trapframe * tf) {
+	cprintf("\033[J");
 	return 0;
 }
 

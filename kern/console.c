@@ -332,7 +332,7 @@ cga_putc(int c) {
 			case 'u': cga_restore_cursor_position(); goto crt_ansi_cmd_finish;
 			case 'J': cga_erase_display(); goto crt_ansi_cmd_finish;
 			case 'K': cga_erase_line(); goto crt_ansi_cmd_finish;
-			case 'm': for(int i = 0; i <= crt_ctx.acnt; i++) cga_set_graphical_mode(crt_ctx.args[i]); break;
+			case 'm': for(int i = 0; i <= crt_ctx.acnt; i++) cga_set_graphical_mode(crt_ctx.args[i]); goto crt_ansi_cmd_finish;
 			case '=': goto crt_ansi_cmd_finish;
 			case 'h': cga_set_mode(crt_ctx.args[0]); goto crt_ansi_cmd_finish;
 			case 'l': cga_reset_mode(); goto crt_ansi_cmd_finish;
