@@ -21,7 +21,15 @@ struct Command {
 	int (*func)(int argc, char** argv, struct Trapframe* tf);
 };
 
-int mon_test(int argc, char ** argv, struct Trapframe * tf) {
+static struct Command commands[] = {
+	{ "help", "Display this list of commands", mon_help },
+	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "colortest", "Test the console color", mon_color_test},
+};
+
+/***** Implementations of basic kernel monitor commands *****/
+
+int mon_color_test(int argc, char ** argv, struct Trapframe * tf) {
 	static const int forecolor[] = {
 		30, 31, 32, 33, 34, 35, 36, 37,
 		90, 91, 92, 93, 94, 95, 96, 97
@@ -44,14 +52,6 @@ int mon_test(int argc, char ** argv, struct Trapframe * tf) {
 	}
 	return 0;
 }
-
-static struct Command commands[] = {
-	{ "help", "Display this list of commands", mon_help },
-	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "colortest", "Test the console color", mon_test},
-};
-
-/***** Implementations of basic kernel monitor commands *****/
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
