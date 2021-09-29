@@ -207,7 +207,7 @@ void cga_set_graphical_mode(int modecode) {
 		crt_ctx.mode &= 0x0f00;
 		crt_ctx.mode |= modecode << 12;
 	}
-	else if(100 <= modecode && modecode < 107) {
+	else if(100 <= modecode && modecode < 108) {
 		modecode = modecode - 100 + 8;
 		crt_ctx.mode &= 0x0f00;
 		crt_ctx.mode |= modecode << 12;
