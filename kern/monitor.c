@@ -22,17 +22,25 @@ struct Command {
 };
 
 int mon_test(int argc, char ** argv, struct Trapframe * tf) {
-	for(int i = 0; i < 8; i++) {
-		cprintf("\x1b[%dmTEST\x1b[0m", 30 + i);
+	static const int forecolor[] = {
+		30, 31, 32, 33, 34, 35, 36, 37,
+		90, 91, 92, 93, 94, 95, 96, 97
+	};
+	static const int backcolor[] = {
+		40, 41, 42, 43, 44, 45, 46, 47,
+		100, 101, 102, 103, 104, 105, 106, 107
+	};
+	cprintf("     ");
+	for(int j = 0 ; j < 16; j++) {
+		cprintf("%4d ", j);
 	}
-	for(int i = 0; i < 8; i++) {
-		cprintf("\x1b[%dmTEST\x1b[0m", 90 + i);
-	}
-	for(int i = 0; i < 8; i++) {
-		cprintf("\x1b[%dmTEST\x1b[0m", 40 + i);
-	}
-	for(int i = 0; i < 8; i++) {
-		cprintf("\x1b[%dmTEST\x1b[0m", 100 + i);
+	cprintf("\n");
+	for(int i = 0; i < 16; i++) {
+		cprintf("%4d ", i);
+		for(int j = 0; j < 16; j++) {
+			cprintf("\033[%d;%dmTEST\033[0m ", backcolor[j], forecolor[i]);
+		}
+		cprintf("\n");
 	}
 	return 0;
 }
@@ -40,7 +48,7 @@ int mon_test(int argc, char ** argv, struct Trapframe * tf) {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "t", "test", mon_test},
+	{ "colortest", "Test the console color", mon_test},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
