@@ -103,7 +103,10 @@ boot_alloc(uint32_t n)
 	//
 	// TODO: your code here.
 
-	return NULL;
+	void * ret = nextfree;
+	nextfree = ROUNDUP(nextfree + n, PGSIZE);
+
+	return ret;
 }
 
 // Set up a two-level page table:
@@ -147,8 +150,9 @@ mem_init(void)
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.  Use memset
 	// to initialize all fields of each struct PageInfo to 0.
-	// Your code goes here:
-
+	// TODO: your code  goes here:
+	pages = boot_alloc(sizeof(*pages) * npages);
+	memset(pages, 0, sizeof(*pages) * npages);
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -171,7 +175,7 @@ mem_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	// Your code goes here:
+	// TODO: your code  goes here:
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -183,7 +187,7 @@ mem_init(void)
 	//       the kernel overflows its stack, it will fault rather than
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
-	// Your code goes here:
+	// TODO: your code  goes here:
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -192,7 +196,7 @@ mem_init(void)
 	// We might not have 2^32 - KERNBASE bytes of physical memory, but
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
-	// Your code goes here:
+	// TODO: your code  goes here:
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -361,7 +365,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 //
 // Corner-case hint: Make sure to consider what happens when the same
 // pp is re-inserted at the same virtual address in the same pgdir.
-// However, try not to distinguish this case in your code, as this
+// However, try not to distinguish this case in TODO: your code , as this
 // frequently leads to subtle bugs; there's an elegant way to handle
 // everything in one code path.
 //
