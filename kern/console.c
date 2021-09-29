@@ -319,7 +319,7 @@ cga_putc(int c) {
 
 			case ';':
 			if(crt_ctx.acnt < 7)
-				crt_ctx.args[crt_ctx.acnt] = 0;
+				crt_ctx.args[++crt_ctx.acnt] = 0;
 			break;
 
 			case 'H':
