@@ -309,7 +309,7 @@ page_alloc(int alloc_flags)
 	page_free_list = ret->pp_link;
 	ret->pp_link = NULL;
 	if(alloc_flags & ALLOC_ZERO) { 
-		// TODO: after virtual memory? before virtual memory?
+		memset(page2kva(ret), 0, PGSIZE);
 	}
 	return ret;
 }
@@ -364,10 +364,24 @@ page_decref(struct PageInfo* pp)
 // table and page directory entries.
 //
 pte_t *
-pgdir_walk(pde_t *pgdir, const void *va, int create)
-{
-	// Fill this function in
-	return NULL;
+pgdir_walk(pde_t *pgdir, const void *va, int create) {
+	struct PageInfo * info = NULL;
+	pde_t pde = pgdir[PDX(va)];
+	pte_t * ptab = NULL;
+	if(pde & PTE_P) {
+		ptab = PTE_ADDR(pde);
+	}
+	else if(create) {
+		struct PageInfo * ptab_info = page_alloc(ALLOC_ZERO);
+		if(ptab_info == NULL) {
+			return NULL;
+		}
+		ptab = page2pa(ptab_info);
+	}
+	else {
+		return NULL;
+	}
+	return &ptab[PTX(va)];
 }
 
 //
