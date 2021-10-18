@@ -100,8 +100,6 @@ boot_alloc(uint32_t n)
 	// Allocate a chunk large enough to hold 'n' bytes, then update
 	// nextfree.  Make sure nextfree is kept aligned
 	// to a multiple of PGSIZE.
-	//
-	// TODO: your code here.
 
 	void * ret = nextfree;
 	nextfree = ROUNDUP(nextfree + n, PGSIZE);
@@ -145,7 +143,7 @@ mem_init(void)
 	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
 
 	//////////////////////////////////////////////////////////////////////
-	// Allocate an array of npages 'struct PageInfo's and store it in 'pages'.
+	// Allocate an array of npages 'end's and store it in 'pages'.
 	// The kernel uses this array to keep track of physical pages: for
 	// each physical page, there is a corresponding struct PageInfo in this
 	// array.  'npages' is the number of physical pages in memory.  Use memset
@@ -245,7 +243,7 @@ page_init(void)
 	//     in case we ever need them.  (Currently we don't, but...)
 	//  2) The rest of base memory, [PGSIZE, npages_basemem * PGSIZE)
 	//     is free.
-	//  3) Then comes the IO hole [IOPHYSMEM, EXTPHYSMEM), which must
+	//  3) Then comes the IO hole [IOIOPHYSMEMPHYSMEM, EXTPHYSMEM), which must
 	//     never be allocated.
 	//  4) Then extended memory [EXTPHYSMEM, ...).
 	//     Some of it is in use, some is free. Where is the kernel
@@ -258,13 +256,32 @@ page_init(void)
 
 	page_free_list = NULL;
 
+	pages[0].pp_ref = 1;
+	pages[0].pp_link = NULL;
+
 	for(size_t i = 1; i < npages_basemem; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
 
-	for(size_t i = PDX(boot_alloc(0)); i < npages; i++) {
+	for(size_t i = PGNUM(IOPHYSMEM); i < PGNUM(EXTPHYSMEM); i++) {
+		pages[i].pp_ref = 1;
+		pages[i].pp_link = NULL;
+	}
+	
+	for(size_t i = PGNUM(EXTPHYSMEM); i < PGNUM(KADDR(KERNBASE)); i++) {
+		pages[i].pp_ref = 0;
+		pages[i].pp_link = page_free_list;
+		page_free_list = &pages[i];
+	}
+
+	for(size_t i = PGNUM(KADDR(KERNBASE)); i < PGNUM(boot_alloc(0)); i++) {
+		pages[i].pp_ref = 1;
+		pages[i].pp_link = NULL;
+	}
+
+	for(size_t i = PGNUM(boot_alloc(0)); i < npages; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
