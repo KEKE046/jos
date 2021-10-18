@@ -161,7 +161,6 @@ mem_init(void)
 
 	check_page_free_list(1);
 	check_page_alloc();
-	// panic("mem_init: This function is not finished\n");
 	check_page();
 
 	//////////////////////////////////////////////////////////////////////
@@ -174,7 +173,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// TODO: your code  goes here:
-	boot_map_region(kern_pgdir, UPAGES, PGSIZE, (uintptr_t)kern_pgdir, PTE_U | PTE_P);
+	boot_map_region(kern_pgdir, UPAGES, PGSIZE, PADDR(pages), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -359,7 +358,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 		if(ptab_info == NULL) return NULL;
 		ptab_info->pp_ref++;
 		physaddr_t pa = page2pa(ptab_info);
-		pgdir[PDX(va)] = pa | PTE_P;
+		pgdir[PDX(va)] = pa | PTE_P | PTE_U;
 		ptab = KADDR(pa);
 	}
 	else return NULL;
@@ -382,10 +381,10 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 {
 	perm = (perm & 0x3FF) | PTE_P;
 	for(size_t offset = 0; offset < size; offset += PGSIZE) {
-		pte_t * ppte = pgdir_walk(pgdir, (const void *)va + offset, true);
+		pte_t * ppte = pgdir_walk(pgdir, (void*)va + offset, true);
 		if(ppte == NULL) panic("No Avaliable Page");
 		pa2page(PTE_ADDR(*ppte))->pp_ref--;
-		*ppte = (uint32_t)(((const void *)pa + offset)) | perm;
+		*ppte = (pa + offset) | perm;
 	}
 }
 
@@ -422,11 +421,17 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	if(ppte == NULL) {
 		return -E_NO_MEM;
 	}
-	if(*ppte & PTE_P) {
-		page_remove(pgdir, va);
-	}
 	physaddr_t pa = page2pa(pp);
-	pp->pp_ref++;
+	bool same = false;
+	if(*ppte & PTE_P) {
+		if(PTE_ADDR(*ppte) != pa) {
+			page_remove(pgdir, va);
+		}
+		else {
+			same = true;
+		}
+	}
+	if(!same) pp->pp_ref++;
 	*ppte = pa | perm;
 	return 0;
 }
