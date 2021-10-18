@@ -174,7 +174,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// TODO: your code  goes here:
-
+	boot_map_region(kern_pgdir, UPAGES, PGSIZE, (uintptr_t)kern_pgdir, PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -187,6 +187,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// TODO: your code  goes here:
+	boot_map_region(kern_pgdir, KSTACKTOP - PTSIZE, PTSIZE, (uintptr_t)bootstack - PTSIZE, PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -196,6 +197,8 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// TODO: your code  goes here:
+	boot_map_region(kern_pgdir, KERNBASE, -KERNBASE, 0, PTE_P);
+
 
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
@@ -262,8 +265,8 @@ page_init(void)
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-	
-	for(size_t i = PGNUM(boot_alloc(0)); i < npages; i++) {
+
+	for(size_t i = PGNUM(PADDR(boot_alloc(0))); i < PGNUM(PADDR((void*)-1u)); i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -351,14 +354,14 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 	pde_t pde = pgdir[PDX(va)];
 	pte_t * ptab = NULL;
 	if(pde & PTE_P) {
-		ptab = PTE_ADDR(pde);
+		ptab = (pte_t*)PTE_ADDR(pde);
 	}
 	else if(create) {
 		struct PageInfo * ptab_info = page_alloc(ALLOC_ZERO);
 		if(ptab_info == NULL) {
 			return NULL;
 		}
-		ptab = page2pa(ptab_info);
+		ptab = (pte_t*)page2pa(ptab_info);
 	}
 	else {
 		return NULL;
@@ -381,7 +384,7 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	perm = (perm & 0x3FF) | PTE_P;
-	for(int offset = 0; offset < size; offset += PGSIZE) {
+	for(size_t offset = 0; offset < size; offset += PGSIZE) {
 		pte_t * ppte = pgdir_walk(pgdir, (const void *)va + offset, true);
 		if(ppte == NULL) panic("No Avaliable Page");
 		*ppte = (uint32_t)(((const void *)pa + offset)) | perm;
