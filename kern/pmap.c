@@ -256,7 +256,7 @@ page_init(void)
 
 	page_free_list = NULL;
 
-	pages[0].pp_ref = 1;
+	pages[0].pp_ref = 0;
 	pages[0].pp_link = NULL;
 
 	for(size_t i = 1; i < npages_basemem; i++) {
@@ -266,7 +266,7 @@ page_init(void)
 	}
 
 	for(size_t i = PGNUM(IOPHYSMEM); i < PGNUM(EXTPHYSMEM); i++) {
-		pages[i].pp_ref = 1;
+		pages[i].pp_ref = 0;
 		pages[i].pp_link = NULL;
 	}
 	
@@ -277,7 +277,7 @@ page_init(void)
 	}
 
 	for(size_t i = PGNUM(KADDR(KERNBASE)); i < PGNUM(boot_alloc(0)); i++) {
-		pages[i].pp_ref = 1;
+		pages[i].pp_ref = 0;
 		pages[i].pp_link = NULL;
 	}
 
@@ -398,7 +398,12 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	// Fill this function in
+	perm = (perm & 0x3FF) | PTE_P;
+	for(int offset = 0; offset < size; offset += PGSIZE) {
+		pte_t * ppte = pgdir_walk(pgdir, (const void *)va + offset, true);
+		if(ppte == NULL) panic("No Avaliable Page");
+		*ppte = (uint32_t)(((const void *)pa + offset)) | perm;
+	}
 }
 
 //
@@ -429,7 +434,17 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
-	// Fill this function in
+	perm = (perm & 0x3FF) | PTE_P;
+	pte_t * ppte = pgdir_walk(pgdir, va, true);
+	if(ppte == NULL) {
+		return -E_NO_MEM;
+	}
+	if(*ppte & PTE_P) {
+		page_remove(pgdir, va);
+	}
+	physaddr_t pa = page2pa(pp);
+	pp->pp_ref++;
+	*ppte = pa | perm;
 	return 0;
 }
 
@@ -447,8 +462,16 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 struct PageInfo *
 page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 {
-	// Fill this function in
-	return NULL;
+	pte_t * pptab = pgdir_walk(pgdir, va, false);
+	if(pte_store) {
+		*pte_store = pptab;
+	}
+	if(pptab && (*pptab & PTE_P)) {
+		return pa2page(PTE_ADDR(*pptab));
+	}
+	else {
+		return NULL;
+	}
 }
 
 //
@@ -469,7 +492,12 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
 void
 page_remove(pde_t *pgdir, void *va)
 {
-	// Fill this function in
+	pte_t * ppte;
+	struct PageInfo * info = page_lookup(pgdir, va, &ppte);
+	if(info == NULL) return;
+	*ppte = 0;
+	page_decref(info);
+	tlb_invalidate(pgdir, va);
 }
 
 //
@@ -479,8 +507,8 @@ page_remove(pde_t *pgdir, void *va)
 void
 tlb_invalidate(pde_t *pgdir, void *va)
 {
-	// Flush the entry only if we're modifying the current address space.
-	// For now, there is only one address space, so always invalidate.
+	// Flush the entry only if  we're modifying the current address space.
+	// For now, there is only oneaddress space, so always invalidate.
 	invlpg(va);
 }
 
