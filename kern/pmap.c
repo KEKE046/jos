@@ -161,7 +161,7 @@ mem_init(void)
 
 	check_page_free_list(1);
 	check_page_alloc();
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 	check_page();
 
 	//////////////////////////////////////////////////////////////////////
@@ -349,22 +349,20 @@ page_decref(struct PageInfo* pp)
 //
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create) {
-	struct PageInfo * info = NULL;
 	pde_t pde = pgdir[PDX(va)];
 	pte_t * ptab = NULL;
 	if(pde & PTE_P) {
-		ptab = (pte_t*)PTE_ADDR(pde);
+		ptab = KADDR(PTE_ADDR(pde));
 	}
 	else if(create) {
 		struct PageInfo * ptab_info = page_alloc(ALLOC_ZERO);
-		if(ptab_info == NULL) {
-			return NULL;
-		}
-		ptab = (pte_t*)page2pa(ptab_info);
+		if(ptab_info == NULL) return NULL;
+		ptab_info->pp_ref++;
+		physaddr_t pa = page2pa(ptab_info);
+		pgdir[PDX(va)] = pa | PTE_P;
+		ptab = KADDR(pa);
 	}
-	else {
-		return NULL;
-	}
+	else return NULL;
 	return &ptab[PTX(va)];
 }
 
@@ -386,6 +384,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	for(size_t offset = 0; offset < size; offset += PGSIZE) {
 		pte_t * ppte = pgdir_walk(pgdir, (const void *)va + offset, true);
 		if(ppte == NULL) panic("No Avaliable Page");
+		pa2page(PTE_ADDR(*ppte))->pp_ref--;
 		*ppte = (uint32_t)(((const void *)pa + offset)) | perm;
 	}
 }
@@ -640,7 +639,7 @@ check_page_alloc(void)
 	cprintf("check_page_alloc() succeeded!\n");
 }
 
-//
+//pgdir
 // Checks that the kernel part of virtual address space
 // has been set up roughly correctly (by mem_init()).
 //
