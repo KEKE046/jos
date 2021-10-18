@@ -175,6 +175,7 @@ mem_init(void)
 	//    - pages itself -- kernel RW, user NONE
 	// TODO: your code  goes here:
 
+
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
 	// stack.  The kernel stack grows down from virtual address KSTACKTOP.
@@ -256,31 +257,12 @@ page_init(void)
 
 	page_free_list = NULL;
 
-	pages[0].pp_ref = 0;
-	pages[0].pp_link = NULL;
-
 	for(size_t i = 1; i < npages_basemem; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-
-	for(size_t i = PGNUM(IOPHYSMEM); i < PGNUM(EXTPHYSMEM); i++) {
-		pages[i].pp_ref = 0;
-		pages[i].pp_link = NULL;
-	}
 	
-	for(size_t i = PGNUM(EXTPHYSMEM); i < PGNUM(KADDR(KERNBASE)); i++) {
-		pages[i].pp_ref = 0;
-		pages[i].pp_link = page_free_list;
-		page_free_list = &pages[i];
-	}
-
-	for(size_t i = PGNUM(KADDR(KERNBASE)); i < PGNUM(boot_alloc(0)); i++) {
-		pages[i].pp_ref = 0;
-		pages[i].pp_link = NULL;
-	}
-
 	for(size_t i = PGNUM(boot_alloc(0)); i < npages; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
