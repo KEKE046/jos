@@ -62,6 +62,7 @@ i386_detect_memory(void)
 // --------------------------------------------------------------
 
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
+static void boot_map_region_comment(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm, const char * comment);
 static void check_page_free_list(bool only_low_memory);
 static void check_page_alloc(void);
 static void check_kern_pgdir(void);
@@ -107,6 +108,8 @@ boot_alloc(uint32_t n)
 	return ret;
 }
 
+#define PGLOG(va, pa, comment) cprintf("pgdir %d %x %x %s\n", PDX(va), va, pa, comment)
+
 // Set up a two-level page table:
 //    kern_pgdir is its linear (virtual) address of the root
 //
@@ -140,6 +143,7 @@ mem_init(void)
 
 	// Permissions: kernel R, user R
 	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
+	PGLOG(UVPT, kern_pgdir, "self-loop");
 
 	//////////////////////////////////////////////////////////////////////
 	// Allocate an array of npages 'end's and store it in 'pages'.
@@ -173,7 +177,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// TODO: your code  goes here:
-	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P | PTE_W);
+	boot_map_region_comment(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P | PTE_W, "UPAGES");
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -186,7 +190,7 @@ mem_init(void)
 	//       overwrite memory.  Known as a "guard page".
 	//     Permissions: kernel RW, user NONE
 	// TODO: your code  goes here:
-	boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_P | PTE_W);
+	boot_map_region_comment(kern_pgdir, KSTACKTOP - KSTKSIZE, KSTKSIZE, PADDR(bootstack), PTE_P | PTE_W, "bootstack");
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -196,7 +200,7 @@ mem_init(void)
 	// we just set up the mapping anyway.
 	// Permissions: kernel RW, user NONE
 	// TODO: your code  goes here:
-	boot_map_region(kern_pgdir, KERNBASE, -KERNBASE, 0, PTE_P | PTE_W);
+	boot_map_region_comment(kern_pgdir, KERNBASE, -KERNBASE, 0, PTE_P | PTE_W, "all-physical");
 
 
 	// Check that the initial page directory has been set up correctly.
@@ -388,6 +392,18 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	}
 }
 
+static void
+boot_map_region_comment(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm, const char * comment)
+{
+	perm = (perm & 0x3FF) | PTE_P;
+	for(size_t offset = 0; offset < size; offset += PGSIZE) {
+		pte_t * ppte = pgdir_walk(pgdir, (void*)va + offset, true);
+		if(ppte == NULL) panic("No Avaliable Page");
+		pa2page(PTE_ADDR(*ppte))->pp_ref--;
+		*ppte = (pa + offset) | perm;
+		PGLOG((void*)va + offset, (pa + offset), comment);
+	}
+}
 //
 // Map the physical page 'pp' at virtual address 'va'.
 // The permissions (the low 12 bits) of the page table entry
