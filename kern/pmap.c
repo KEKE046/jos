@@ -349,9 +349,9 @@ page_decref(struct PageInfo* pp)
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create) {
 	pde_t pde = pgdir[PDX(va)];
-	pte_t * ptab = NULL;
 	if(pde & PTE_P) {
-		ptab = KADDR(PTE_ADDR(pde));
+		pte_t * ptab = KADDR(PTE_ADDR(pde));
+		return &ptab[PTX(va)];
 	}
 	else if(create) {
 		struct PageInfo * ptab_info = page_alloc(ALLOC_ZERO);
@@ -359,10 +359,10 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 		ptab_info->pp_ref++;
 		physaddr_t pa = page2pa(ptab_info);
 		pgdir[PDX(va)] = pa | PTE_P | PTE_U | PTE_W;
-		ptab = KADDR(pa);
+		pte_t * ptab = KADDR(pa);
+		return &ptab[PTX(va)];
 	}
 	else return NULL;
-	return &ptab[PTX(va)];
 }
 
 //
@@ -422,16 +422,16 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 		return -E_NO_MEM;
 	}
 	physaddr_t pa = page2pa(pp);
-	bool same = false;
+	bool same_map = false;
 	if(*ppte & PTE_P) {
 		if(PTE_ADDR(*ppte) != pa) {
 			page_remove(pgdir, va);
 		}
 		else {
-			same = true;
+			same_map = true;
 		}
 	}
-	if(!same) pp->pp_ref++;
+	if(!same_map) pp->pp_ref++;
 	*ppte = pa | perm;
 	return 0;
 }
