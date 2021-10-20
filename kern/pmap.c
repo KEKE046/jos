@@ -344,9 +344,9 @@ page_decref(struct PageInfo* pp)
 //
 pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create) {
-	pde_t pde = pgdir[PDX(va)];
-	if(pde & PTE_P) {
-		pte_t * ptab = KADDR(PTE_ADDR(pde));
+	pde_t * pde = &pgdir[PDX(va)];
+	if(*pde & PTE_P) {
+		pte_t * ptab = KADDR(PTE_ADDR(*pde));
 		return &ptab[PTX(va)];
 	}
 	else if(create) {
@@ -354,7 +354,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 		if(ptab_info == NULL) return NULL;
 		ptab_info->pp_ref++;
 		physaddr_t pa = page2pa(ptab_info);
-		pgdir[PDX(va)] = pa | PTE_P | PTE_U | PTE_W;
+		*pde = pa | PTE_P | PTE_U | PTE_W;
 		pte_t * ptab = KADDR(pa);
 		return &ptab[PTX(va)];
 	}
