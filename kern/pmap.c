@@ -698,9 +698,9 @@ memcmd_dump(int argc, char ** argv, struct Trapframe * tf) {
 	short tick = 0;
 	for(uintptr_t i = start; i <= end; i++) {
 		cprintf("%02x ", *(unsigned char *)i);
-		if(((tick++)&0xf)==0) cprintf("\n");
+		if(((++tick)&0xf)==0) cprintf("\n");
 	}
-	cprintf("\n");
+	if(tick)cprintf("\n");
 	return 0;
 }
 
@@ -715,9 +715,9 @@ memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf) {
 	short tick = 0;
 	for(uintptr_t i = start; i <= end; i++) {
 		cprintf("%02x ", *(unsigned char*)KADDR(i));
-		if(((tick++)&0xf)==0) cprintf("\n");
+		if(((++tick)&0xf)==0) cprintf("\n");
 	}
-	cprintf("\n");
+	if(tick)cprintf("\n");
 	return 0;
 }
 
