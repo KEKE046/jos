@@ -598,20 +598,13 @@ static void _show_pde(pde_t pde) {
 	_show_pte((pte_t)pde);
 }
 
-pde_t * mem_access_pde(uintptr_t va) {
-	return PGADDR(PDX(UVPT), PDX(UVPT), PDX(va) * sizeof(pde_t));
-}
-
-pte_t * mem_access_pte(uintptr_t va) {
-	return PGADDR(PDX(UVPT), PDX(va), PTX(va) * sizeof(pte_t));
-}
-
 int
 memcmd_pde(int argc, char ** argv, struct Trapframe * tf) {
 	for(size_t i = 0; i < NPDENTRIES; i++) {
 		uintptr_t va = PGSIZE * NPTENTRIES * i;
-		pde_t * ppde = mem_access_pde(va);
-		cprintf("%08x ", va); _show_pde(*ppde); cprintf("\n");
+		cprintf("%08x ", va);
+		_show_pde(kern_pgdir[PDX(va)]);
+		cprintf("\n");
 	}
 	return 0;
 }
@@ -627,12 +620,13 @@ memcmd_show(int argc, char ** argv, struct Trapframe * tf) {
 	cprintf("mapping from %08x to %08x\n", start, end - PGSIZE);
 	uintptr_t va = start;
 	do {
-		pde_t * ppde = mem_access_pde(va);
+		pde_t * ppde = &kern_pgdir[PDX(va)];
 		if(!(*ppde & PTE_P) || (*ppde & PTE_PS)) {
 			cprintf("%08x ", va); _show_pde(*ppde); cprintf("\n");
 		}
 		else {
-			pte_t * ppte = mem_access_pte(va);
+			pte_t * ppte = pgdir_walk(kern_pgdir, (void*)va, false);
+			assert(ppte);
 			cprintf("%08x ", va); _show_pte(*ppte); cprintf("\n");
 		}
 		va += PGSIZE;
@@ -642,7 +636,7 @@ memcmd_show(int argc, char ** argv, struct Trapframe * tf) {
 
 int
 memcmd_set(int argc, char ** argv, struct Trapframe * tf) {
-	if(argc <= 5) {
+	if(argc != 5) {
 		cprintf("usage mem set <pde|pte> <va> <ent> <value>\n");
 		return -1;
 	}
@@ -651,18 +645,29 @@ memcmd_set(int argc, char ** argv, struct Trapframe * tf) {
 	const char * ent = argv[3];
 	uint64_t value = atoi(argv[4]);
 #define _memcmd_set_inner(flag) \
-	else if(strcmp(ent, #flag)) {\
-		if(pde) {*mem_access_pde(va) &=~PTE_##flag; *mem_access_pde(va) |= value * PTE_##flag;} \
-		else    {*mem_access_pte(va) &=~PTE_##flag; *mem_access_pte(va) |= value * PTE_##flag;} \
+	else if(strcmp(ent, #flag)==0) {\
+		if(pde) {\
+			pde_t * ppde = &kern_pgdir[PDX(va)]; \
+			*ppde = (*ppde & (~PTE_##flag)) | (value * PTE_##flag);\
+		} \
+		else    {\
+			pte_t * ppte = pgdir_walk(kern_pgdir, (void*)va, true); \
+			if(ppte == NULL) {cprintf("No Available Pages"); \
+				return -1; \
+			} \
+			*ppte = (*ppte & (~PTE_##flag)) | (value * PTE_##flag); \
+		} \
 	}
-	if(strcmp(ent, "pa")) {
+	if(strcmp(ent, "pa")==0) {
 		if(pde) {
-			pde_t * ppde = mem_access_pde(va);
+			pde_t * ppde = &kern_pgdir[PDX(va)];
 			*ppde = value | PDE_FLAGS(*ppde);
+			tlb_invalidate(kern_pgdir, (void*)va);
 		}
 		else {
-			pte_t * ppte = mem_access_pte(va);
+			pte_t * ppte = pgdir_walk(kern_pgdir, (void*)va, true);
 			*ppte = value | PTE_FLAGS(*ppte);
+			tlb_invalidate(kern_pgdir, (void*)va);
 		}
 	}
 	_memcmd_set_inner(P)
@@ -695,6 +700,7 @@ memcmd_dump(int argc, char ** argv, struct Trapframe * tf) {
 		cprintf("%02x ", *(unsigned char *)i);
 		if(((tick++)&0xf)==0) cprintf("\n");
 	}
+	cprintf("\n");
 	return 0;
 }
 
@@ -711,6 +717,7 @@ memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf) {
 		cprintf("%02x ", *(unsigned char*)KADDR(i));
 		if(((tick++)&0xf)==0) cprintf("\n");
 	}
+	cprintf("\n");
 	return 0;
 }
 
