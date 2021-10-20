@@ -496,6 +496,77 @@ tlb_invalidate(pde_t *pgdir, void *va)
 	invlpg(va);
 }
 
+// --------------------------------------------------------------
+// Debug functions.
+// --------------------------------------------------------------
+
+static int64_t atoi(char * arg) {
+#define _isnum(x) ('0' <= (x) && (x) <= '9') || ('a' <= (x) && (x) <= 'f')
+#define _getnum(x) (('0' <= (x) && (x) <= '9') ? ((x) - '0') : ((x) - 'a' + 10))
+	int64_t ret = 0, mul = 1, base=10;
+	while(!('0' <= *arg && *arg <= '9')) arg++;
+	if(*arg == '-') { mul = -1; arg++; }
+	if(arg[0] == '0') {
+		if(arg[1] == 'x') {
+			base = 16;
+			arg = arg + 2;
+		}
+	}
+	while(_isnum(*arg)) {
+		ret = ret * base + _getnum(*arg);
+		arg++;
+	}
+	return ret * mul;
+#undef _isnum
+#undef _getnum
+}
+
+static void _show_pte(pte_t pde) {
+#define _show_pde_inner(flag) \
+	if(pde & PTE_##flag) {cprintf(" "); cprintf(#flag);}\
+	else {cprintf(" "); for(size_t i = strlen(#flag); i; i--) cprintf(" ");}
+	cprintf("%08x ", PTE_ADDR(pde));
+	_show_pde_inner(P);
+	_show_pde_inner(PS);
+	_show_pde_inner(W);
+	_show_pde_inner(U); 
+	_show_pde_inner(PWT); 
+	_show_pde_inner(PCD); 
+	_show_pde_inner(A);
+	_show_pde_inner(D); 
+	_show_pde_inner(G);
+	_show_pde_inner(AVAIL);
+#undef _show_pde_inner
+}
+
+static void _show_pde(pde_t pde) {
+	_show_pte((pte_t)pde);
+}
+
+int
+mem_showmappings(int argc, char ** argv, struct Trapframe * tf) {
+	if(argc != 3) {
+		cprintf("usage showmappings <start> <end>\n");
+		return -1;
+	}
+	uintptr_t start = ROUNDDOWN(atoi(argv[1]), PGSIZE);
+	uintptr_t end = ROUNDUP(atoi(argv[2]) + 1, PGSIZE);
+	for(uintptr_t va = start; va < end; va += PGSIZE) {
+		pde_t * ppde = PGADDR(PDX(kern_pgdir), PDX(kern_pgdir), PDX(va) * PGSIZE / NPDENTRIES);
+		if((*ppde & PTE_P) && (*ppde & PTE_PS)) {
+			cprintf("%08x ", va);
+			_show_pde(*ppde);
+			cprintf("\n");
+		}
+		else {
+			pte_t * ppte = PGADDR(PDX(kern_pgdir), PDX(va), PTX(va) * PGSIZE / NPDENTRIES);
+			cprintf("%08x ", va);
+			_show_pte(*ppte);
+			cprintf("\n");
+		}
+	}
+	return 0;
+}
 
 // --------------------------------------------------------------
 // Checking functions.

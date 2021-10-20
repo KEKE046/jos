@@ -10,6 +10,7 @@
 #include <kern/console.h>
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
+#include <kern/pmap.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -26,6 +27,7 @@ static struct Command commands[] = {
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "colortest", "Test the console color", mon_color_test},
 	{ "clear", "Clear the screen", mon_clear},
+	{ "showmappings", "Show memory mapping", mem_showmappings}
 };
 
 /***** Implementations of basic kernel monitor commands *****/

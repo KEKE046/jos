@@ -8,6 +8,7 @@
 
 #include <inc/memlayout.h>
 #include <inc/assert.h>
+#include <kern/monitor.h>
 
 extern char bootstacktop[], bootstack[];
 
@@ -83,5 +84,8 @@ page2kva(struct PageInfo *pp)
 }
 
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
+
+int
+mem_showmappings(int argc, char ** argv, struct Trapframe * tf);
 
 #endif /* !JOS_KERN_PMAP_H */
