@@ -86,6 +86,12 @@ page2kva(struct PageInfo *pp)
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
 
 int
-mem_showmappings(int argc, char ** argv, struct Trapframe * tf);
+memcmd_show(int argc, char ** argv, struct Trapframe * tf);
+
+int
+memcmd_set(int argc, char ** argv, struct Trapframe * tf);
+
+int
+mem_memcmd(int argc, char ** argv, struct Trapframe * tf);
 
 #endif /* !JOS_KERN_PMAP_H */

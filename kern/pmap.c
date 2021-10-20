@@ -171,7 +171,7 @@ mem_init(void)
 	//    - the new image at UPAGES -- kernel R, user R
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
-	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_U | PTE_P | PTE_W);
+	boot_map_region(kern_pgdir, UPAGES, PTSIZE, PADDR(pages), PTE_P | PTE_W);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -517,8 +517,8 @@ static int64_t atoi(char * arg) {
 		arg++;
 	}
 	return ret * mul;
-#undef _isnum
 #undef _getnum
+#undef _isnum
 }
 
 static void _show_pte(pte_t pde) {
@@ -543,26 +543,151 @@ static void _show_pde(pde_t pde) {
 	_show_pte((pte_t)pde);
 }
 
+pde_t * mem_access_pde(uintptr_t va) {
+	return PGADDR(PDX(kern_pgdir), PDX(kern_pgdir), PDX(va) * PGSIZE / NPDENTRIES);
+}
+
+pte_t * mem_access_pte(uintptr_t va) {
+	return PGADDR(PDX(kern_pgdir), PDX(va), PTX(va) * PGSIZE / NPTENTRIES);
+}
+
 int
-mem_showmappings(int argc, char ** argv, struct Trapframe * tf) {
+memcmd_pde(int argc, char ** argv, struct Trapframe * tf) {
+	for(size_t i = 0; i < NPDENTRIES; i++) {
+		uintptr_t va = PGSIZE * NPTENTRIES * i;
+		pde_t * ppde = mem_access_pde(va);
+		cprintf("%08x ", va); _show_pde(*ppde); cprintf("\n");
+	}
+	return 0;
+}
+
+int
+memcmd_show(int argc, char ** argv, struct Trapframe * tf) {
 	if(argc != 3) {
-		cprintf("usage showmappings <start> <end>\n");
+		cprintf("usage mem show <start> <end>\n");
 		return -1;
 	}
 	uintptr_t start = ROUNDDOWN(atoi(argv[1]), PGSIZE);
 	uintptr_t end = ROUNDUP(atoi(argv[2]) + 1, PGSIZE);
-	for(uintptr_t va = start; va < end; va += PGSIZE) {
-		pde_t * ppde = PGADDR(PDX(kern_pgdir), PDX(kern_pgdir), PDX(va) * PGSIZE / NPDENTRIES);
-		if((*ppde & PTE_P) && (*ppde & PTE_PS)) {
-			cprintf("%08x ", va);
-			_show_pde(*ppde);
-			cprintf("\n");
+	cprintf("mapping from %08x to %08x\n", start, end - PGSIZE);
+	uintptr_t va = start;
+	do {
+		pde_t * ppde = mem_access_pde(va);
+		if(!(*ppde & PTE_P) || (*ppde & PTE_PS)) {
+			cprintf("%08x ", va); _show_pde(*ppde); cprintf("\n");
 		}
 		else {
-			pte_t * ppte = PGADDR(PDX(kern_pgdir), PDX(va), PTX(va) * PGSIZE / NPDENTRIES);
-			cprintf("%08x ", va);
-			_show_pte(*ppte);
+			pte_t * ppte = mem_access_pte(va);
+			cprintf("%08x ", va); _show_pte(*ppte); cprintf("\n");
+		}
+		va += PGSIZE;
+	} while(va != end);
+	return 0;
+}
+
+int
+memcmd_set(int argc, char ** argv, struct Trapframe * tf) {
+	if(argc <= 5) {
+		cprintf("usage mem set <pde|pte> <va> <ent> <value>\n");
+		return -1;
+	}
+	bool pde = strcmp(argv[1], "pde") == 0;
+	uintptr_t va = atoi(argv[2]);
+	const char * ent = argv[3];
+	uint64_t value = atoi(argv[4]);
+#define _memcmd_set_inner(flag) \
+	else if(strcmp(ent, #flag)) {\
+		if(pde) {*mem_access_pde(va) &=~PTE_##flag; *mem_access_pde(va) |= value * PTE_##flag;} \
+		else    {*mem_access_pte(va) &=~PTE_##flag; *mem_access_pte(va) |= value * PTE_##flag;} \
+	}
+	if(strcmp(ent, "pa")) {
+		if(pde) {
+			pde_t * ppde = mem_access_pde(va);
+			*ppde = value | PDE_FLAGS(*ppde);
+		}
+		else {
+			pte_t * ppte = mem_access_pte(va);
+			*ppte = value | PTE_FLAGS(*ppte);
+		}
+	}
+	_memcmd_set_inner(P)
+	_memcmd_set_inner(PS)
+	_memcmd_set_inner(W)
+	_memcmd_set_inner(U) 
+	_memcmd_set_inner(PWT) 
+	_memcmd_set_inner(PCD) 
+	_memcmd_set_inner(A)
+	_memcmd_set_inner(D) 
+	_memcmd_set_inner(G)
+	_memcmd_set_inner(AVAIL)
+	else {
+		cprintf("Unknown entity: %s\n", ent);
+		return -1;
+	}
+	return 0;
+}
+
+int 
+memcmd_dump(int argc, char ** argv, struct Trapframe * tf) {
+	if(argc != 3) {
+		cprintf("usage mem dump <start> <end>\n");
+		return -1;
+	}
+	uintptr_t start = atoi(argv[1]);
+	uintptr_t end = atoi(argv[2]);
+	int tick = 0;
+	for(uintptr_t i = start; i <= end; i++) {
+		cprintf("%02x ", *(unsigned char *)i);
+		if(((tick++)&0xf)==0) {
 			cprintf("\n");
+		}
+	}
+	return 0;
+}
+
+int 
+memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf) {
+	if(argc != 3) {
+		cprintf("usage mem dump <start> <end>\n");
+		return -1;
+	}
+	uintptr_t start = atoi(argv[1]);
+	uintptr_t end = atoi(argv[2]);
+	int tick = 0;
+	for(uintptr_t i = start; i <= end; i++) {
+		cprintf("%02x ", *(unsigned char*)KADDR(i));
+		if(((tick++)&0xf)==0) {
+			cprintf("\n");
+		}
+	}
+	return 0;
+}
+
+int
+mem_memcmd(int argc, char ** argv, struct Trapframe * tf) {
+	if(argc == 1) {
+		cprintf("Usage: mem <pde|show|set> ...");
+		return -1;
+	}
+	else {
+		if(strcmp(argv[1], "pde") == 0) {
+			memcmd_pde(argc - 1, argv + 1, tf);
+		}
+		else if(strcmp(argv[1], "show") == 0) {
+			memcmd_show(argc - 1, argv + 1, tf);
+		}
+		else if(strcmp(argv[1], "set") == 0) {
+			memcmd_set(argc - 1, argv + 1, tf);
+		}
+		else if(strcmp(argv[1], "dump") == 0) {
+			memcmd_dump(argc - 1, argv + 1, tf);
+		}
+		else if(strcmp(argv[1], "dumpphy") == 0) {
+			memcmd_dumpphy(argc - 1, argv + 1, tf);
+		}
+		else {
+			cprintf("Unknown command %s\n", argv[1]);
+			return -1;
 		}
 	}
 	return 0;
