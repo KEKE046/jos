@@ -198,6 +198,10 @@ mem_init(void)
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 
+	uint32_t cr4 = rcr4();
+	cr4 |= CR4_PSE;
+	lcr4(cr4);
+
 	// Switch from the minimal entry page directory to the full kern_pgdir
 	// page table we just created.	Our instruction pointer should be
 	// somewhere between KERNBASE and KERNBASE+4MB right now, which is
@@ -320,6 +324,21 @@ page_decref(struct PageInfo* pp)
 		page_free(pp);
 }
 
+pte_t * split_large_page(pde_t * pde) {
+	struct PageInfo * ptab_info = page_alloc(ALLOC_ZERO);
+	if(ptab_info == NULL) return NULL;
+	uint32_t flags = PDE_FLAGS(*pde) & ~PTE_PS;
+	physaddr_t pa = PDE_ADDR(*pde);
+	ptab_info->pp_ref++;
+	physaddr_t ptab_pa = page2pa(ptab_info);
+	pte_t * ptab = KADDR(ptab_pa);
+	for(size_t i = 0; i < NPTENTRIES; i++) {
+		ptab[i] = (pa + i * PGSIZE) | flags;
+	}
+	*pde = ptab_pa | PTE_P | PTE_U | PTE_W;
+	return ptab;
+}
+
 // Given 'pgdir', a pointer to a page directory, pgdir_walk returns
 // a pointer to the page table entry (PTE) for linear address 'va'.
 // This requires walking the two-level page table structure.
@@ -346,8 +365,15 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create) {
 	pde_t * pde = &pgdir[PDX(va)];
 	if(*pde & PTE_P) {
-		pte_t * ptab = KADDR(PTE_ADDR(*pde));
-		return &ptab[PTX(va)];
+		if(*pde & PTE_PS) {
+			pte_t * ptab = split_large_page(pde);
+			if(ptab == NULL) panic("No Available Page");
+			return &ptab[PTX(va)];
+		}
+		else {
+			pte_t * ptab = KADDR(PDE_ADDR(*pde));
+			return &ptab[PTX(va)];
+		}
 	}
 	else if(create) {
 		struct PageInfo * ptab_info = page_alloc(ALLOC_ZERO);
@@ -359,6 +385,19 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 		return &ptab[PTX(va)];
 	}
 	else return NULL;
+}
+
+pde_t * pgdir_walk_bigpg(pde_t * pgdir, const void * va) {
+	pde_t * pde = &pgdir[PDX(va)];
+	if(*pde & PTE_P) {
+		if(*pde & PTE_PS) {
+			return pde;
+		}
+		else {
+			return NULL;
+		}
+	}
+	else return pde;
 }
 
 //
@@ -376,11 +415,25 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	perm = perm | PTE_P;
-	for(size_t offset = 0; offset < size; offset += PGSIZE) {
-		pte_t * ppte = pgdir_walk(pgdir, (void*)va + offset, true);
-		if(ppte == NULL) panic("No Avaliable Page");
-		pa2page(PTE_ADDR(*ppte))->pp_ref--;
-		*ppte = (pa + offset) | perm;
+	size_t offset = 0;
+	while(offset < size) {
+		void * map_va = (void *)va + offset;
+		physaddr_t map_pa = pa + offset;
+		if(PTX(map_pa) == 0 && size - offset >= PGSIZE * NPTENTRIES) {
+			pde_t * ppde = pgdir_walk_bigpg(pgdir, map_va);
+			if(ppde != NULL) {
+				*ppde = map_pa | perm | PTE_PS;
+				offset += PGSIZE * NPTENTRIES;
+				continue;
+			}
+		}
+		if(size - offset >= PGSIZE) {
+			pte_t * ppte = pgdir_walk(pgdir, map_va, true);
+			if(ppte == NULL) panic("No Available Page");
+			pa2page(PTE_ADDR(*ppte))->pp_ref--;
+			*ppte = map_pa | perm;
+			offset += PGSIZE;
+		}
 	}
 }
 
@@ -896,6 +949,9 @@ check_va2pa(pde_t *pgdir, uintptr_t va)
 	pgdir = &pgdir[PDX(va)];
 	if (!(*pgdir & PTE_P))
 		return ~0;
+	if(*pgdir & PTE_PS) {
+		return PDE_ADDR(*pgdir) + PTX(va) * PGSIZE;
+	}
 	p = (pte_t*) KADDR(PTE_ADDR(*pgdir));
 	if (!(p[PTX(va)] & PTE_P))
 		return ~0;
