@@ -375,7 +375,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
-	perm = (perm & 0x3FF) | PTE_P;
+	perm = perm | PTE_P;
 	for(size_t offset = 0; offset < size; offset += PGSIZE) {
 		pte_t * ppte = pgdir_walk(pgdir, (void*)va + offset, true);
 		if(ppte == NULL) panic("No Avaliable Page");
@@ -412,7 +412,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 int
 page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 {
-	perm = (perm & 0x3FF) | PTE_P;
+	perm = perm | PTE_P;
 	pte_t * ppte = pgdir_walk(pgdir, va, true);
 	if(ppte == NULL) {
 		return -E_NO_MEM;
