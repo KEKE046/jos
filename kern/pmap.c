@@ -635,12 +635,10 @@ memcmd_dump(int argc, char ** argv, struct Trapframe * tf) {
 	}
 	uintptr_t start = atoi(argv[1]);
 	uintptr_t end = atoi(argv[2]);
-	int tick = 0;
+	short tick = 0;
 	for(uintptr_t i = start; i <= end; i++) {
 		cprintf("%02x ", *(unsigned char *)i);
-		if(((tick++)&0xf)==0) {
-			cprintf("\n");
-		}
+		if(((tick++)&0xf)==0) cprintf("\n");
 	}
 	return 0;
 }
@@ -648,17 +646,15 @@ memcmd_dump(int argc, char ** argv, struct Trapframe * tf) {
 int 
 memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf) {
 	if(argc != 3) {
-		cprintf("usage mem dump <start> <end>\n");
+		cprintf("usage mem dumpphy <start> <end>\n");
 		return -1;
 	}
 	uintptr_t start = atoi(argv[1]);
 	uintptr_t end = atoi(argv[2]);
-	int tick = 0;
+	short tick = 0;
 	for(uintptr_t i = start; i <= end; i++) {
 		cprintf("%02x ", *(unsigned char*)KADDR(i));
-		if(((tick++)&0xf)==0) {
-			cprintf("\n");
-		}
+		if(((tick++)&0xf)==0) cprintf("\n");
 	}
 	return 0;
 }
@@ -666,7 +662,7 @@ memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf) {
 int
 mem_memcmd(int argc, char ** argv, struct Trapframe * tf) {
 	if(argc == 1) {
-		cprintf("Usage: mem <pde|show|set> ...");
+		cprintf("Usage: mem <pde|show|set|dump|dumpphy> ...");
 		return -1;
 	}
 	else {

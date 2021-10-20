@@ -86,10 +86,19 @@ page2kva(struct PageInfo *pp)
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
 
 int
+memcmd_pde(int argc, char ** argv, struct Trapframe * tf);
+
+int
 memcmd_show(int argc, char ** argv, struct Trapframe * tf);
 
 int
 memcmd_set(int argc, char ** argv, struct Trapframe * tf);
+
+int 
+memcmd_dump(int argc, char ** argv, struct Trapframe * tf);
+
+int 
+memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf);
 
 int
 mem_memcmd(int argc, char ** argv, struct Trapframe * tf);
