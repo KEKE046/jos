@@ -259,12 +259,14 @@ page_init(void)
 
 	page_free_list = NULL;
 
-	for(size_t i = 1; i < npages_basemem; i++) {
+	for(size_t i = PGNUM(PADDR(boot_alloc(0))); i < npages; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
 	}
-	for(size_t i = PGNUM(PADDR(boot_alloc(0))); i < npages; i++) {
+	// at system start, the lower memory is mapped into the initial pagetable
+	// so I put these pages into the top of page_free_list
+	for(size_t i = 1; i < npages_basemem; i++) {
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -597,11 +599,11 @@ static void _show_pde(pde_t pde) {
 }
 
 pde_t * mem_access_pde(uintptr_t va) {
-	return PGADDR(PDX(kern_pgdir), PDX(kern_pgdir), PDX(va) * PGSIZE / NPDENTRIES);
+	return PGADDR(PDX(UVPT), PDX(UVPT), PDX(va) * sizeof(pde_t));
 }
 
 pte_t * mem_access_pte(uintptr_t va) {
-	return PGADDR(PDX(kern_pgdir), PDX(va), PTX(va) * PGSIZE / NPTENTRIES);
+	return PGADDR(PDX(UVPT), PDX(va), PTX(va) * sizeof(pte_t));
 }
 
 int
