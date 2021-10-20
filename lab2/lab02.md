@@ -1,4 +1,4 @@
-# Report for lab2, Kexing Zhou
+# Report for lab2, Kexing Zhou, 1900013008
 
 [TOC]
 
@@ -310,7 +310,6 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	for(size_t offset = 0; offset < size; offset += PGSIZE) {
 		pte_t * ppte = pgdir_walk(pgdir, (void*)va + offset, true);
 		if(ppte == NULL) panic("No Avaliable Page");
-		pa2page(PTE_ADDR(*ppte))->pp_ref--;
 		*ppte = (pa + offset) | perm;
 	}
 }
@@ -638,7 +637,6 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 		if(size - offset >= PGSIZE) {
 			pte_t * ppte = pgdir_walk(pgdir, map_va, true);
 			if(ppte == NULL) panic("No Available Page");
-			pa2page(PTE_ADDR(*ppte))->pp_ref--;
 			*ppte = map_pa | perm;
 			offset += PGSIZE;
 		}
