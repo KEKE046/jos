@@ -367,12 +367,15 @@ pte_t *
 pgdir_walk(pde_t *pgdir, const void *va, int create) {
 	pde_t * pde = &pgdir[PDX(va)];
 	if(*pde & PTE_P) {
+#ifdef PMAP_HUGE_PAGE
 		if(*pde & PTE_PS) {
 			pte_t * ptab = split_large_page(pde);
 			if(ptab == NULL) panic("No Available Page");
 			return &ptab[PTX(va)];
 		}
-		else {
+		else
+#endif
+		{
 			pte_t * ptab = KADDR(PDE_ADDR(*pde));
 			return &ptab[PTX(va)];
 		}
@@ -389,7 +392,8 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 	else return NULL;
 }
 
-pde_t * pgdir_walk_bigpg(pde_t * pgdir, const void * va) {
+#ifdef PMAP_HUGE_PAGE
+pde_t * pgdir_walk_hugepg(pde_t * pgdir, const void * va) {
 	pde_t * pde = &pgdir[PDX(va)];
 	if(*pde & PTE_P) {
 		if(*pde & PTE_PS) {
@@ -401,6 +405,7 @@ pde_t * pgdir_walk_bigpg(pde_t * pgdir, const void * va) {
 	}
 	else return pde;
 }
+#endif
 
 //
 // Map [va, va+size) of virtual address space to physical [pa, pa+size)
@@ -421,14 +426,16 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 	while(offset < size) {
 		void * map_va = (void *)va + offset;
 		physaddr_t map_pa = pa + offset;
+#ifdef PMAP_HUGE_PAGE
 		if(PTX(map_pa) == 0 && size - offset >= PGSIZE * NPTENTRIES) {
-			pde_t * ppde = pgdir_walk_bigpg(pgdir, map_va);
+			pde_t * ppde = pgdir_walk_hugepg(pgdir, map_va);
 			if(ppde != NULL) {
 				*ppde = map_pa | perm | PTE_PS;
 				offset += PGSIZE * NPTENTRIES;
 				continue;
 			}
 		}
+#endif
 		if(size - offset >= PGSIZE) {
 			pte_t * ppte = pgdir_walk(pgdir, map_va, true);
 			if(ppte == NULL) panic("No Available Page");

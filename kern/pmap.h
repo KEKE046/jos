@@ -10,6 +10,8 @@
 #include <inc/assert.h>
 #include <kern/monitor.h>
 
+// #define PMAP_HUGE_PAGE
+
 extern char bootstacktop[], bootstack[];
 
 extern struct PageInfo *pages;
