@@ -47,6 +47,17 @@
     #define AT_SLOW_BLINK "\033[5m"
     #define AT_RAPID_BLINK "\033[6m"
     #define AT_INVERT "\033[7m"
+    
+    #define AT_CUR_UP "\033[A"
+    #define AT_CUR_DOWN "\033[B"
+    #define AT_CUR_LEFT "\033[C"
+    #define AT_CUR_RIGHT "\033[D"
+
+    #define AT_ERASE_TO_END "\033[0J"
+    #define AT_ERASE_TO_BEGIN "\033[1J"
+    #define AT_ERASE_ALL "\033[2J"
+    
+    #define AT_CUR_POS_HOME "\033[;H"
 
 #else
 
@@ -94,7 +105,18 @@
     #define AT_SLOW_BLINK ""
     #define AT_RAPID_BLINK ""
     #define AT_INVERT ""
+    #define AT_CLEAR ""
 
+    #define AT_CUR_UP ""
+    #define AT_CUR_DOWN ""
+    #define AT_CUR_LEFT ""
+    #define AT_CUR_RIGHT ""
+
+    #define AT_ERASE_TO_END ""
+    #define AT_ERASE_TO_BEGIN ""
+    #define AT_ERASE_ALL ""
+    
+    #define AT_CUR_POS_HOME ""
 #endif
 
 #endif

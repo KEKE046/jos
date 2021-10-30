@@ -11,7 +11,9 @@
 #include <kern/monitor.h>
 #include <kern/kdebug.h>
 #include <kern/trap.h>
+
 #include <kern/pmap.h>
+#include <inc/ansiterm.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -60,7 +62,7 @@ mon_color_test(int argc, char ** argv, struct Trapframe * tf) {
 
 int
 mon_clear(int argc, char ** argv, struct Trapframe * tf) {
-	cprintf("\033[J");
+	cprintf(AT_ERASE_ALL AT_CUR_POS_HOME);
 	return 0;
 }
 
