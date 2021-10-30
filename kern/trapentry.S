@@ -24,9 +24,11 @@
 	.globl name;		/* define global symbol for 'name' */	\
 	.type name, @function;	/* symbol type is function */		\
 	.align 2;		/* align function definition */		\
+	.text; \
 	name:			/* function starts here */		\
 	pushl $(num);							\
-	jmp _alltraps
+	jmp _alltraps; \
+	.data; .int name; .int num;
 
 /* Use TRAPHANDLER_NOEC for traps where the CPU doesn't push an error code.
  * It pushes a 0 in place of the error code, so the trap frame has the same
@@ -36,10 +38,16 @@
 	.globl name;							\
 	.type name, @function;						\
 	.align 2;							\
+	.text; \
 	name:								\
 	pushl $0;							\
 	pushl $(num);							\
-	jmp _alltraps
+	jmp _alltraps; \
+	.data; .int name; .int num;
+
+.data
+.global trapentry_table
+trapentry_table:
 
 .text
 
@@ -67,11 +75,14 @@
 	TRAPHANDLER_NOEC(  trap_hander_MCHK    ,18  )
 	TRAPHANDLER_NOEC(  trap_hander_SIMDERR ,19  )
 
+.data
+	.int 0; .int 0;
+
 /*
  * Lab 3: Your code here for _alltraps
  */
 
-
+.text
 _alltraps:
 	pushl %ds
 	pushl %es

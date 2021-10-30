@@ -66,28 +66,12 @@ trap_init(void)
 
 	// LAB 3: Your code here.
 
-#define _trap_init_helper(name) \
-	extern void trap_hander_##name();\
-	SETGATE(idt[T_##name], 0, GD_KT, trap_hander_##name, 0);
-
-	_trap_init_helper(DIVIDE)
-	_trap_init_helper(DEBUG)
-	_trap_init_helper(NMI)
-	_trap_init_helper(BRKPT)
-	_trap_init_helper(OFLOW)
-	_trap_init_helper(BOUND)
-	_trap_init_helper(ILLOP)
-	_trap_init_helper(DEVICE)
-	_trap_init_helper(DBLFLT)
-	_trap_init_helper(TSS)
-	_trap_init_helper(SEGNP)
-	_trap_init_helper(STACK)
-	_trap_init_helper(GPFLT)
-	_trap_init_helper(PGFLT)
-	_trap_init_helper(FPERR)
-	_trap_init_helper(ALIGN)
-	_trap_init_helper(MCHK)
-	_trap_init_helper(SIMDERR)
+	extern uint32_t trapentry_table[];
+	for(size_t i = 0; trapentry_table[i]; i += 2) {
+		uintptr_t func_addr = trapentry_table[i];
+		int trap_no = trapentry_table[i + 1];
+		SETGATE(idt[trap_no], 0, GD_KT, func_addr, 0);
+	}
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -167,6 +151,10 @@ trap_dispatch(struct Trapframe *tf)
 {
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
+
+	switch (tf->tf_trapno) {
+		case T_PGFLT: page_fault_handler(tf); break;
+	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
