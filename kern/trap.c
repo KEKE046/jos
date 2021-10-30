@@ -66,6 +66,29 @@ trap_init(void)
 
 	// LAB 3: Your code here.
 
+#define _trap_init_helper(name) \
+	extern void trap_hander_##name();\
+	SETGATE(idt[T_##name], 0, GD_KT, trap_hander_##name, 0);
+
+	_trap_init_helper(DIVIDE)
+	_trap_init_helper(DEBUG)
+	_trap_init_helper(NMI)
+	_trap_init_helper(BRKPT)
+	_trap_init_helper(OFLOW)
+	_trap_init_helper(BOUND)
+	_trap_init_helper(ILLOP)
+	_trap_init_helper(DEVICE)
+	_trap_init_helper(DBLFLT)
+	_trap_init_helper(TSS)
+	_trap_init_helper(SEGNP)
+	_trap_init_helper(STACK)
+	_trap_init_helper(GPFLT)
+	_trap_init_helper(PGFLT)
+	_trap_init_helper(FPERR)
+	_trap_init_helper(ALIGN)
+	_trap_init_helper(MCHK)
+	_trap_init_helper(SIMDERR)
+
 	// Per-CPU setup 
 	trap_init_percpu();
 }

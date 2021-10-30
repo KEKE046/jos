@@ -48,8 +48,36 @@
  */
 
 
+	TRAPHANDLER_NOEC(  trap_hander_DIVIDE  ,0   )
+	TRAPHANDLER_NOEC(  trap_hander_DEBUG   ,1   )
+	TRAPHANDLER_NOEC(  trap_hander_NMI     ,2   )
+	TRAPHANDLER_NOEC(  trap_hander_BRKPT   ,3   )
+	TRAPHANDLER_NOEC(  trap_hander_OFLOW   ,4   )
+	TRAPHANDLER_NOEC(  trap_hander_BOUND   ,5   )
+	TRAPHANDLER_NOEC(  trap_hander_ILLOP   ,6   )
+	TRAPHANDLER_NOEC(  trap_hander_DEVICE  ,7   )
+	TRAPHANDLER     (  trap_hander_DBLFLT  ,8   )
+	TRAPHANDLER     (  trap_hander_TSS     ,10  )
+	TRAPHANDLER     (  trap_hander_SEGNP   ,11  )
+	TRAPHANDLER     (  trap_hander_STACK   ,12  )
+	TRAPHANDLER     (  trap_hander_GPFLT   ,13  )
+	TRAPHANDLER     (  trap_hander_PGFLT   ,14  )
+	TRAPHANDLER_NOEC(  trap_hander_FPERR   ,16  )
+	TRAPHANDLER_NOEC(  trap_hander_ALIGN   ,17  )
+	TRAPHANDLER_NOEC(  trap_hander_MCHK    ,18  )
+	TRAPHANDLER_NOEC(  trap_hander_SIMDERR ,19  )
 
 /*
  * Lab 3: Your code here for _alltraps
  */
 
+
+_alltraps:
+	pushl %ds
+	pushl %es
+	pushal
+	movw $(GD_KD), %ax
+	movw %ax, %ds
+	movw %ax, %es
+	pushl %esp
+	call trap
