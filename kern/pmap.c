@@ -10,6 +10,8 @@
 #include <kern/kclock.h>
 #include <kern/env.h>
 
+#include <inc/ansiterm.h>
+
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
 static size_t npages_basemem;	// Amount of base memory (in pages)
@@ -211,9 +213,12 @@ mem_init(void)
 	// Check that the initial page directory has been set up correctly.
 	check_kern_pgdir();
 
+#ifdef PMAP_HUGE_PAGE
 	uint32_t cr4 = rcr4();
 	cr4 |= CR4_PSE;
 	lcr4(cr4);
+	cprintf(AT_YLW "pmap.c: Huge page is used !!\n" AT_RESET);
+#endif
 
 	// Switch from the minimal entry page directory to the full kern_pgdir
 	// page table we just created.	Our instruction pointer should be
