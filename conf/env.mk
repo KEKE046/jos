@@ -18,3 +18,6 @@ V = @
 # following line and set it to the full path to QEMU.
 #
 # QEMU=
+
+# CFLAGS+=-DPMAP_HUGE_PAGE
+# CFLAGS+=-DANSITERM_DISABLE

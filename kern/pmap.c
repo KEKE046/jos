@@ -125,6 +125,10 @@ mem_init(void)
 	uint32_t cr0;
 	size_t n;
 
+#ifdef PMAP_HUGE_PAGE
+	info("Huge page is used !!");
+#endif
+
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
 
@@ -217,7 +221,6 @@ mem_init(void)
 	uint32_t cr4 = rcr4();
 	cr4 |= CR4_PSE;
 	lcr4(cr4);
-	info("Huge page is used !!");
 #endif
 
 	// Switch from the minimal entry page directory to the full kern_pgdir
