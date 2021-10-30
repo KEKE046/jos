@@ -184,6 +184,7 @@ env_setup_vm(struct Env *e)
 	// LAB 3: Your code here.
 	memcpy(page2kva(p), kern_pgdir, PGSIZE);
 	p->pp_ref++;
+	e->env_pgdir = page2kva(p);
 	
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
@@ -252,6 +253,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	*newenv_store = e;
 
 	cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	info("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
 	return 0;
 }
 
@@ -273,13 +275,13 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
 	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
-	uintptr_t end = ROUNDUP((uintptr_t)(va + len + 1), PGSIZE);
+	uintptr_t end = ROUNDUP((uintptr_t)(va + len + PGSIZE), PGSIZE);
 	int errno = 0;
 	for(uintptr_t i = start; i != end; i += PGSIZE) {
 		struct PageInfo * pp = page_alloc(0);
 		if(pp == NULL)
 			panic("page_alloc failed: %e", -E_NO_MEM);
-		if((errno = page_insert(e->env_pgdir, pp, (void*)va, PTE_P | PTE_W | PTE_U)) < 0)
+		if((errno = page_insert(e->env_pgdir, pp, (void*)i, PTE_P | PTE_W | PTE_U)) < 0)
 			panic("page_insert failed: %e", errno);
 	}
 }
@@ -365,8 +367,9 @@ load_icode(struct Env *e, uint8_t *binary)
 		if(ph->p_filesz < ph->p_memsz) {
 			region_copy(e, va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
 		}
+		// info("map %08x-%08x", ph->p_va, ph->p_va + ph->p_memsz);
 	}
-	
+	// info("entry: %08x", eh->e_entry);
 	e->env_tf.tf_eip = eh->e_entry;
 	
 	// Now map one page for the program's initial stack
