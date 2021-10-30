@@ -9,6 +9,8 @@
 #include <kern/pmap.h>
 #include <kern/kclock.h>
 
+#include <inc/ansiterm.h>
+
 
 void
 i386_init(void)
@@ -58,9 +60,9 @@ _panic(const char *file, int line, const char *fmt,...)
 	asm volatile("cli; cld");
 
 	va_start(ap, fmt);
-	cprintf("kernel panic at %s:%d: ", file, line);
+	cprintf(AT_RED "kernel panic at %s:%d: ", file, line);
 	vcprintf(fmt, ap);
-	cprintf("\n");
+	cprintf("\n" AT_RESET);
 	va_end(ap);
 
 dead:
@@ -76,8 +78,18 @@ _warn(const char *file, int line, const char *fmt,...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	cprintf("kernel warning at %s:%d: ", file, line);
+	cprintf(AT_YLW "kernel warning at %s:%d: ", file, line);
 	vcprintf(fmt, ap);
-	cprintf("\n");
+	cprintf("\n" AT_RESET);
+	va_end(ap);
+}
+
+void
+_info(const char *file, int line, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	cprintf(AT_BRI_GRN "[%s:%d]: ", file, line);
+	vcprintf(fmt, ap);
+	cprintf("\n" AT_RESET);
 	va_end(ap);
 }

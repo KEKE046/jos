@@ -204,7 +204,7 @@ mem_init(void)
 	uint32_t cr4 = rcr4();
 	cr4 |= CR4_PSE;
 	lcr4(cr4);
-	cprintf(AT_YLW "pmap.c: Huge page is used !!\n" AT_RESET);
+	info("Huge page is used !!");
 #endif
 
 	// Switch from the minimal entry page directory to the full kern_pgdir
