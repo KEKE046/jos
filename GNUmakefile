@@ -335,3 +335,9 @@ always:
 
 .PHONY: all always \
 	handin git-handin tarball tarball-pref clean realclean distclean grade handin-prep handin-check
+
+
+.PHONY: sync
+sync:
+	git pull github && git push --all github
+	cd note && git pull github && git push --all github
