@@ -20,7 +20,7 @@
  *   void NAME();
  * where NAME is the argument passed to TRAPHANDLER.
  */
-#define TRAPHANDLER(name, num)						\
+#define TRAPHANDLER(name, num, dpl)						\
 	.globl name;		/* define global symbol for 'name' */	\
 	.type name, @function;	/* symbol type is function */		\
 	.align 2;		/* align function definition */		\
@@ -28,13 +28,13 @@
 	name:			/* function starts here */		\
 	pushl $(num);							\
 	jmp _alltraps; \
-	.data; .int name; .int num;
+	.data; .int name; .int num; .int dpl;
 
 /* Use TRAPHANDLER_NOEC for traps where the CPU doesn't push an error code.
  * It pushes a 0 in place of the error code, so the trap frame has the same
  * format in either case.
  */
-#define TRAPHANDLER_NOEC(name, num)					\
+#define TRAPHANDLER_NOEC(name, num, dpl)					\
 	.globl name;							\
 	.type name, @function;						\
 	.align 2;							\
@@ -43,7 +43,7 @@
 	pushl $0;							\
 	pushl $(num);							\
 	jmp _alltraps; \
-	.data; .int name; .int num;
+	.data; .int name; .int num; .int dpl;
 
 .data
 .global trapentry_table
@@ -56,24 +56,24 @@ trapentry_table:
  */
 
 
-	TRAPHANDLER_NOEC(  trap_hander_DIVIDE  ,  0   )
-	TRAPHANDLER_NOEC(  trap_hander_DEBUG   ,  1   )
-	TRAPHANDLER_NOEC(  trap_hander_NMI     ,  2   )
-	TRAPHANDLER_NOEC(  trap_hander_BRKPT   ,  3   )
-	TRAPHANDLER_NOEC(  trap_hander_OFLOW   ,  4   )
-	TRAPHANDLER_NOEC(  trap_hander_BOUND   ,  5   )
-	TRAPHANDLER_NOEC(  trap_hander_ILLOP   ,  6   )
-	TRAPHANDLER_NOEC(  trap_hander_DEVICE  ,  7   )
-	TRAPHANDLER     (  trap_hander_DBLFLT  ,  8   )
-	TRAPHANDLER     (  trap_hander_TSS     ,  10  )
-	TRAPHANDLER     (  trap_hander_SEGNP   ,  11  )
-	TRAPHANDLER     (  trap_hander_STACK   ,  12  )
-	TRAPHANDLER     (  trap_hander_GPFLT   ,  13  )
-	TRAPHANDLER     (  trap_hander_PGFLT   ,  14  )
-	TRAPHANDLER_NOEC(  trap_hander_FPERR   ,  16  )
-	TRAPHANDLER_NOEC(  trap_hander_ALIGN   ,  17  )
-	TRAPHANDLER_NOEC(  trap_hander_MCHK    ,  18  )
-	TRAPHANDLER_NOEC(  trap_hander_SIMDERR ,  19  )
+	TRAPHANDLER_NOEC(  trap_hander_DIVIDE  ,  0   ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_DEBUG   ,  1   ,  3  )
+	TRAPHANDLER_NOEC(  trap_hander_NMI     ,  2   ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_BRKPT   ,  3   ,  3  )
+	TRAPHANDLER_NOEC(  trap_hander_OFLOW   ,  4   ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_BOUND   ,  5   ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_ILLOP   ,  6   ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_DEVICE  ,  7   ,  0  )
+	TRAPHANDLER     (  trap_hander_DBLFLT  ,  8   ,  0  )
+	TRAPHANDLER     (  trap_hander_TSS     ,  10  ,  0  )
+	TRAPHANDLER     (  trap_hander_SEGNP   ,  11  ,  0  )
+	TRAPHANDLER     (  trap_hander_STACK   ,  12  ,  0  )
+	TRAPHANDLER     (  trap_hander_GPFLT   ,  13  ,  0  )
+	TRAPHANDLER     (  trap_hander_PGFLT   ,  14  ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_FPERR   ,  16  ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_ALIGN   ,  17  ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_MCHK    ,  18  ,  0  )
+	TRAPHANDLER_NOEC(  trap_hander_SIMDERR ,  19  ,  0  )
 
 .data
 	.int 0; .int 0;

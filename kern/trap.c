@@ -67,10 +67,11 @@ trap_init(void)
 	// LAB 3: Your code here.
 
 	extern uint32_t trapentry_table[];
-	for(size_t i = 0; trapentry_table[i]; i += 2) {
+	for(size_t i = 0; trapentry_table[i]; i += 3) {
 		uintptr_t func_addr = trapentry_table[i];
 		int trap_no = trapentry_table[i + 1];
-		SETGATE(idt[trap_no], 0, GD_KT, func_addr, 0);
+		int dpl = trapentry_table[i + 2];
+		SETGATE(idt[trap_no], 1, GD_KT, func_addr, dpl);
 	}
 
 	// Per-CPU setup 
@@ -154,6 +155,8 @@ trap_dispatch(struct Trapframe *tf)
 
 	switch (tf->tf_trapno) {
 		case T_PGFLT: page_fault_handler(tf); break;
+		case T_BRKPT: monitor(tf); break;
+		default: break;
 	}
 
 	// Unexpected trap: The user process or the kernel has a bug.
