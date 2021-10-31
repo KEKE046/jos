@@ -30,7 +30,8 @@ static struct Command commands[] = {
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "colortest", "Test the console color", mon_color_test},
 	{ "clear", "Clear the screen", mon_clear},
-	{ "mem", "Memory command", mem_memcmd}
+	{ "mem", "Memory command", mem_memcmd},
+	{ "backtrace", "Backtrace the stack", mon_backtrace},
 };
 
 /***** Implementations of basic kernel monitor commands *****/
