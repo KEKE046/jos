@@ -14,6 +14,7 @@
 
 #include <kern/pmap.h>
 #include <inc/ansiterm.h>
+#include <kern/env.h>
 
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
@@ -32,6 +33,7 @@ static struct Command commands[] = {
 	{ "clear", "Clear the screen", mon_clear},
 	{ "mem", "Memory command", mem_memcmd},
 	{ "backtrace", "Backtrace the stack", mon_backtrace},
+	{ "debug", "User code debug", mon_debug}
 };
 
 /***** Implementations of basic kernel monitor commands *****/
@@ -115,7 +117,25 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	return 0;
 }
 
-
+int
+mon_debug(int argc, char **argv, struct Trapframe * tf) {
+	if(argc > 1) {
+		if(tf->tf_trapno != T_BRKPT) {
+			cprintf("Trap is not a breakpoint, continuing.\n");
+		}
+		char * cmd = argv[1];
+		if(strcmp(cmd, "si") == 0) {
+			tf->tf_eflags |= FL_TF;
+			env_run(curenv);
+		}
+		else if(strcmp(cmd, "c") == 0) {
+			tf->tf_eflags &= ~FL_TF;
+			env_run(curenv);
+		}
+	}
+	cprintf("Usage: debug <si|c>\n");
+	return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
