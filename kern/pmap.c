@@ -624,11 +624,25 @@ static uintptr_t user_mem_check_addr;
 // and -E_FAULT otherwise.
 //
 int
-user_mem_check(struct Env *env, const void *va, size_t len, int perm)
+user_mem_check(struct Env *env, const void *_va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
-
-	return pgdir_checkperm(env->env_pgdir, va, len, perm, perm);
+	uintptr_t va = (uintptr_t)_va;
+	uintptr_t start = ROUNDDOWN(va, PGSIZE);
+	uintptr_t end   = ROUNDUP((va + len + PGSIZE), PGSIZE);
+	for(uintptr_t i = start; i != end; i += PGSIZE) {
+		pte_t * pte = pgdir_walk(env->env_pgdir, (void *)i, false);
+		pte_t value = pte ? *pte : 0;
+		if((value & perm) != perm) {
+			// Why the print so difficult?
+			uintptr_t fail_addr = i;
+			if(fail_addr < va) fail_addr = va;
+			if(fail_addr >= va + len) fail_addr = va + len - 1;
+			loge("[%08x] user_mem_check assertion failure for va %08x", env->env_id, fail_addr);
+			return -E_FAULT;
+		}
+	}
+	return 0;
 }
 
 //

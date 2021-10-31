@@ -18,15 +18,14 @@
 static void
 sys_cputs(const char *s, size_t len)
 {
-	// info("sys_puts(%08x,%d)", s, len);
+	// logi("sys_puts(%08x,%d)", s, len);
 	// Check that the user has permission to read memory [s, s+len).
 	// Destroy the environment if not.
 
 	// LAB 3: Your code here.
 
-	if(pgdir_checkperm(curenv->env_pgdir, s, len, PTE_U, PTE_U) < 0) {
+	if(user_mem_check(curenv, s, len, PTE_U) < 0) {
 		// info("pgdir_checkperm failed");
-		loge("[%08x] user_mem_check assertion failure for va %08x", curenv->env_id, s);
 		env_destroy(curenv);
 	}
 	else {
