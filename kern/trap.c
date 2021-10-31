@@ -166,6 +166,7 @@ trap_dispatch(struct Trapframe *tf)
 				tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx,
 				tf->tf_regs.reg_edi, tf->tf_regs.reg_esi
 			);
+			env_run(curenv);
 			break;
 		default: break;
 	}

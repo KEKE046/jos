@@ -416,6 +416,19 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 	else return NULL;
 }
 
+int
+pgdir_checkperm(pde_t * pgdir, const void * va, size_t len, int perm, int mask) {
+	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
+	uintptr_t end   = ROUNDUP(((uintptr_t)va + len + PGSIZE), PGSIZE);
+	for(uintptr_t i = start; i != end; i += PGSIZE) {
+		pte_t * pte = pgdir_walk(pgdir, (void *)i, false);
+		pte_t value = pte ? *pte : 0;
+		if((value & mask) != perm) return -1;
+	}
+	return 0;
+}
+
+
 #ifdef PMAP_HUGE_PAGE
 pde_t * pgdir_walk_hugepg(pde_t * pgdir, const void * va) {
 	pde_t * pde = &pgdir[PDX(va)];
@@ -579,6 +592,15 @@ tlb_invalidate(pde_t *pgdir, void *va)
 	// Flush the entry only if  we're modifying the current address space.
 	// For now, there is only oneaddress space, so always invalidate.
 	invlpg(va);
+}
+
+void
+tlb_invalidate_range(pde_t * pgdir, void * va, size_t len) {
+	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
+	uintptr_t end   = ROUNDUP(((uintptr_t)va + len + PGSIZE), PGSIZE);
+	for(uintptr_t i = start; i != end; i++) {
+		invlpg((void*)i);
+	}
 }
 
 static uintptr_t user_mem_check_addr;

@@ -287,12 +287,9 @@ region_alloc(struct Env *e, void *va, size_t len)
 
 static void
 region_copy(struct Env *e, void *dst, void *src, size_t len) {
-	uintptr_t start = ROUNDDOWN((uintptr_t)dst, PGSIZE);
-	uintptr_t end = ROUNDUP((uintptr_t)(dst + len + 1), PGSIZE);
-	for(uintptr_t i = start; i != end; i += PGSIZE) 
-		tlb_invalidate(e->env_pgdir, (void*)i);
 	uint32_t cr3 = rcr3();
 	lcr3(PADDR(e->env_pgdir));
+	tlb_invalidate_range(e->env_pgdir, dst, len);
 	if(src) memcpy(dst, src, len);
 	else memset(dst, 0, len);
 	lcr3(cr3);

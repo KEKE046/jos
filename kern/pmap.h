@@ -65,6 +65,7 @@ struct PageInfo *page_lookup(pde_t *pgdir, void *va, pte_t **pte_store);
 void	page_decref(struct PageInfo *pp);
 
 void	tlb_invalidate(pde_t *pgdir, void *va);
+void    tlb_invalidate_range(pde_t * pgdir, void * va, size_t len);
 
 int	user_mem_check(struct Env *env, const void *va, size_t len, int perm);
 void	user_mem_assert(struct Env *env, const void *va, size_t len, int perm);
@@ -90,6 +91,8 @@ page2kva(struct PageInfo *pp)
 }
 
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
+
+int pgdir_checkperm(pde_t * pgdir, const void * va, size_t len, int perm, int mask);
 
 int
 memcmd_pde(int argc, char ** argv, struct Trapframe * tf);
