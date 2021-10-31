@@ -13,8 +13,9 @@ void _log(const char *file, int line, const char * color, const char *fmt, ...);
 
 #define warn(...) _warn(__FILE__, __LINE__, __VA_ARGS__)
 #define panic(...) _panic(__FILE__, __LINE__, __VA_ARGS__)
-#define logd(...) _log(__FILE__, __LINE__, AT_GREY, __VA_ARGS__)
+#define logd(...) _log(__FILE__, __LINE__, AT_BRI_BLK, __VA_ARGS__)
 #define logi(...) _log(__FILE__, __LINE__, AT_BRI_GRN, __VA_ARGS__)
+#define logp(...) _log(__FILE__, __LINE__, AT_BRI_MAG, __VA_ARGS__)
 #define logw(...) _log(__FILE__, __LINE__, AT_BRI_YLW, __VA_ARGS__)
 #define loge(...) _log(__FILE__, __LINE__, AT_BRI_RED, __VA_ARGS__)
 

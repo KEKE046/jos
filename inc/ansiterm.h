@@ -11,8 +11,8 @@
     #define AT_MAG "\033[35m"
     #define AT_CYN "\033[36m"
     #define AT_WHT "\033[37m"
-    #define AT_BRT_BLK "\033[90m"
-    #define AT_GRY AT_BRT_BLK
+    #define AT_BRI_BLK "\033[90m"
+    #define AT_GRY AT_BRI_BLK
     #define AT_BRI_RED "\033[91m"
     #define AT_BRI_GRN "\033[92m"
     #define AT_BRI_YLW "\033[93m"

@@ -55,7 +55,7 @@ i386_detect_memory(void)
 	npages = totalmem / (PGSIZE / 1024);
 	npages_basemem = basemem / (PGSIZE / 1024);
 
-	cprintf("Physical memory: %uK available, base = %uK, extended = %uK\n",
+	logi("Physical memory: %uK available, base = %uK, extended = %uK",
 		totalmem, basemem, totalmem - basemem);
 }
 
@@ -911,7 +911,7 @@ check_page_free_list(bool only_low_memory)
 	assert(nfree_basemem > 0);
 	assert(nfree_extmem > 0);
 
-	cprintf("check_page_free_list() succeeded!\n");
+	logd("check_page_free_list() succeeded!");
 }
 
 //
@@ -989,7 +989,7 @@ check_page_alloc(void)
 		--nfree;
 	assert(nfree == 0);
 
-	cprintf("check_page_alloc() succeeded!\n");
+	logd("check_page_alloc() succeeded!");
 }
 
 //pgdir
@@ -1045,7 +1045,7 @@ check_kern_pgdir(void)
 			break;
 		}
 	}
-	cprintf("check_kern_pgdir() succeeded!\n");
+	logd("check_kern_pgdir() succeeded!");
 }
 
 // This function returns the physical address of the page containing 'va',
@@ -1221,7 +1221,7 @@ check_page(void)
 	page_free(pp1);
 	page_free(pp2);
 
-	cprintf("check_page() succeeded!\n");
+	logd("check_page() succeeded!");
 }
 
 // check page_insert, page_remove, &c, with an installed kern_pgdir
@@ -1263,5 +1263,5 @@ check_page_installed_pgdir(void)
 	// free the pages we took
 	page_free(pp0);
 
-	cprintf("check_page_installed_pgdir() succeeded!\n");
+	logd("check_page_installed_pgdir() succeeded!");
 }
