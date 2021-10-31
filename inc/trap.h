@@ -79,6 +79,11 @@
 #define IRQ_IDE         14
 #define IRQ_ERROR       19
 
+#define PL_KERNEL    0
+#define PL_DEVDRI1   1
+#define PL_DEVDRI2   2
+#define PL_USER      3
+
 #ifndef __ASSEMBLER__
 
 #include <inc/types.h>

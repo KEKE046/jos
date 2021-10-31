@@ -157,6 +157,16 @@ trap_dispatch(struct Trapframe *tf)
 		case T_DEBUG: monitor(tf); break;
 		case T_PGFLT: page_fault_handler(tf); break;
 		case T_BRKPT: monitor(tf); break;
+		case T_SYSCALL: 
+			// The system call number will go in %eax, 
+			// and the arguments (up to five of them) will go in %edx, %ecx, %ebx, %edi, and %esi, respectively.
+			// The kernel passes the return value back in %eax.
+			tf->tf_regs.reg_eax = syscall(
+				tf->tf_regs.reg_eax,
+				tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx,
+				tf->tf_regs.reg_edi, tf->tf_regs.reg_esi
+			);
+			break;
 		default: break;
 	}
 

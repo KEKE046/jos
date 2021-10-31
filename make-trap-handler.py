@@ -17,6 +17,7 @@ data = '''
 #define T_ALIGN     17		// aligment check
 #define T_MCHK      18		// machine check
 #define T_SIMDERR   19		// SIMD floating point error
+#define T_SYSCALL   48		// system call
 '''
 
 import pyperclip
@@ -26,7 +27,9 @@ msg = []
 
 for line in data.strip().split('\n'):
     tokens = re.split('\s+', line)
-    msg.append(f'_trap_helper_noec({tokens[1][2:]})')
+    id = int(tokens[2])
+    suf = '     ' if 8 <= id and id <= 14 else '_NOEC'
+    msg.append(f'TRAPHANDLER{suf}(  trap_hander_{tokens[1][2:]:7s}  ,  {tokens[1]:9s}  ,  0  )')
     # msg.append(f'extern void hander_{tokens[1]:10s}();')
     # msg.append(f'SETGATE(idt[{tokens[1]:10s}], 1, GD_KT, trap_hander_DIVIDE, 0);')
 
