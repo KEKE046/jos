@@ -423,7 +423,7 @@ pgdir_checkperm(pde_t * pgdir, const void * va, size_t len, int perm, int mask) 
 	for(uintptr_t i = start; i != end; i += PGSIZE) {
 		pte_t * pte = pgdir_walk(pgdir, (void *)i, false);
 		pte_t value = pte ? *pte : 0;
-		if((value & mask) != perm) return -1;
+		if((value & mask) != perm) return -E_FAULT;
 	}
 	return 0;
 }
@@ -628,7 +628,7 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
 
-	return 0;
+	return pgdir_checkperm(env->env_pgdir, va, len, perm, perm);
 }
 
 //

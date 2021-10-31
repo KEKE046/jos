@@ -98,10 +98,11 @@ _warn(const char *file, int line, const char *fmt,...)
 }
 
 void
-_info(const char *file, int line, const char *fmt, ...) {
+_log(const char *file, int line, const char * color, const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
-	cprintf(AT_BRI_GRN "[%s:%d]: ", file, line);
+	// cprintf("[%s:%d]: ", file, line);
+	cprintf("%s", color);
 	vcprintf(fmt, ap);
 	cprintf("\n" AT_RESET);
 	va_end(ap);

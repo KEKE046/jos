@@ -10,6 +10,7 @@
 #include <kern/trap.h>
 #include <kern/syscall.h>
 #include <kern/console.h>
+#include <inc/ansiterm.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -24,7 +25,8 @@ sys_cputs(const char *s, size_t len)
 	// LAB 3: Your code here.
 
 	if(pgdir_checkperm(curenv->env_pgdir, s, len, PTE_U, PTE_U) < 0) {
-		info("pgdir_checkperm failed");
+		// info("pgdir_checkperm failed");
+		loge("[%08x] user_mem_check assertion failure for va %08x", curenv->env_id, s);
 		env_destroy(curenv);
 	}
 	else {
