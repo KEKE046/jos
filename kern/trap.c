@@ -232,9 +232,9 @@ page_fault_handler(struct Trapframe *tf)
 
 	// LAB 3: Your code here.
 	if(tf->tf_es == GD_KD && tf->tf_ds == GD_KD) {
-		cprintf("kernel fault va %08x ip %08x\n", fault_va, tf->tf_eip);
+		cprintf("kernel page fault va %08x ip %08x\n", fault_va, tf->tf_eip);
 		print_trapframe(tf);
-		panic("kernel fault va %08x ip %08x\n", fault_va, tf->tf_eip);
+		panic("kernel page fault va %08x ip %08x\n", fault_va, tf->tf_eip);
 	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
