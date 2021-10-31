@@ -419,7 +419,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create) {
 int
 pgdir_checkperm(pde_t * pgdir, const void * va, size_t len, int perm, int mask) {
 	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
-	uintptr_t end   = ROUNDUP(((uintptr_t)va + len + PGSIZE), PGSIZE);
+	uintptr_t end   = ROUNDUP((uintptr_t)va + len, PGSIZE);
 	for(uintptr_t i = start; i != end; i += PGSIZE) {
 		pte_t * pte = pgdir_walk(pgdir, (void *)i, false);
 		pte_t value = pte ? *pte : 0;
@@ -597,7 +597,7 @@ tlb_invalidate(pde_t *pgdir, void *va)
 void
 tlb_invalidate_range(pde_t * pgdir, void * va, size_t len) {
 	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
-	uintptr_t end   = ROUNDUP(((uintptr_t)va + len + PGSIZE), PGSIZE);
+	uintptr_t end   = ROUNDUP((uintptr_t)va + len, PGSIZE);
 	for(uintptr_t i = start; i != end; i++) {
 		invlpg((void*)i);
 	}
@@ -629,7 +629,7 @@ user_mem_check(struct Env *env, const void *_va, size_t len, int perm)
 	// LAB 3: Your code here.
 	uintptr_t va = (uintptr_t)_va;
 	uintptr_t start = ROUNDDOWN(va, PGSIZE);
-	uintptr_t end   = ROUNDUP((va + len + PGSIZE), PGSIZE);
+	uintptr_t end   = ROUNDUP(va + len, PGSIZE);
 	for(uintptr_t i = start; i != end; i += PGSIZE) {
 		pte_t * pte = pgdir_walk(env->env_pgdir, (void *)i, false);
 		pte_t value = pte ? *pte : 0;

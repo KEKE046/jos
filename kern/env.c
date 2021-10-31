@@ -274,7 +274,7 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
 	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
-	uintptr_t end = ROUNDUP((uintptr_t)(va + len + PGSIZE), PGSIZE);
+	uintptr_t end   = ROUNDUP((uintptr_t)va + len, PGSIZE);
 	int errno = 0;
 	for(uintptr_t i = start; i != end; i += PGSIZE) {
 		struct PageInfo * pp = page_alloc(0);
@@ -358,6 +358,7 @@ load_icode(struct Env *e, uint8_t *binary)
 		struct Proghdr * ph = ph_start + i;
 		if(ph->p_type != ELF_PROG_LOAD) continue;
 		void * va = (void*)ph->p_va;
+		logd("alloc %08x %08x", va, ph->p_memsz);
 		region_alloc(e, va, ph->p_memsz);
 		region_copy(e, va, binary + ph->p_offset, ph->p_filesz);
 		if(ph->p_filesz < ph->p_memsz) {
