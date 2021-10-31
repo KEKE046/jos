@@ -69,8 +69,8 @@
     #define AT_MAG ""
     #define AT_CYN ""
     #define AT_WHT ""
-    #define AT_BRT_BLK ""
-    #define AT_GRY AT_BRT_BLK
+    #define AT_BRI_BLK ""
+    #define AT_GRY AT_BRI_BLK
     #define AT_BRI_RED ""
     #define AT_BRI_GRN ""
     #define AT_BRI_YLW ""
