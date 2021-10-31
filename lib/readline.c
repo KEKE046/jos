@@ -20,8 +20,11 @@ readline(const char *prompt)
 			cprintf("read error: %e\n", c);
 			return NULL;
 		} else if ((c == '\b' || c == '\x7f') && i > 0) {
-			if (echoing)
+			if (echoing) {
 				cputchar('\b');
+				cputchar(' ');
+				cputchar('\b');
+			}
 			i--;
 		} else if (c >= ' ' && i < BUFLEN-1) {
 			if (echoing)

@@ -154,6 +154,9 @@ QEMUOPTS += $(QEMUEXTRA)
 .gdbinit: .gdbinit.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
 
+run:
+	tmuxinator start -p ./tmux.yml
+
 gdb:
 	$(GDB) -n -x .gdbinit
 
@@ -207,7 +210,7 @@ grade:
 	@echo $(MAKE) clean
 	@$(MAKE) clean || \
 	  (echo "'make clean' failed.  HINT: Do you have another running instance of JOS?" && exit 1)
-	./grade-lab$(LAB) $(GRADEFLAGS)
+	DEFS=$(GRADEDEFS) ./grade-lab$(LAB) $(GRADEFLAGS)
 
 git-handin: handin-check
 	@if test -n "`git config remote.handin.url`"; then \
@@ -336,3 +339,9 @@ always:
 
 .PHONY: all always \
 	handin git-handin tarball tarball-pref clean realclean distclean grade handin-prep handin-check
+
+
+.PHONY: sync
+sync:
+	git pull github && git push --all github
+	cd note && git pull github && git push --all github

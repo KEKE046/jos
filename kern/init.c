@@ -17,6 +17,8 @@
 
 static void boot_aps(void);
 
+#include <inc/ansiterm.h>
+
 
 void
 i386_init(void)
@@ -137,9 +139,9 @@ _panic(const char *file, int line, const char *fmt,...)
 	asm volatile("cli; cld");
 
 	va_start(ap, fmt);
-	cprintf("kernel panic on CPU %d at %s:%d: ", cpunum(), file, line);
+	cprintf(AT_BRI_RED "kernel panic on CPU %d at %s:%d: ", cpunum(), file, line);
 	vcprintf(fmt, ap);
-	cprintf("\n");
+	cprintf("\n" AT_RESET);
 	va_end(ap);
 
 dead:
@@ -155,8 +157,19 @@ _warn(const char *file, int line, const char *fmt,...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	cprintf("kernel warning at %s:%d: ", file, line);
+	cprintf(AT_YLW "kernel warning at %s:%d: ", file, line);
 	vcprintf(fmt, ap);
-	cprintf("\n");
+	cprintf("\n" AT_RESET);
+	va_end(ap);
+}
+
+void
+_log(const char *file, int line, const char * color, const char *fmt, ...) {
+	va_list ap;
+	va_start(ap, fmt);
+	// cprintf("[%s:%d]: ", file, line);
+	cprintf("%s", color);
+	vcprintf(fmt, ap);
+	cprintf("\n" AT_RESET);
 	va_end(ap);
 }

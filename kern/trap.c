@@ -73,6 +73,14 @@ trap_init(void)
 
 	// LAB 3: Your code here.
 
+	extern uint32_t trapentry_table[];
+	for(size_t i = 0; trapentry_table[i]; i += 3) {
+		uintptr_t func_addr = trapentry_table[i];
+		int trap_no = trapentry_table[i + 1];
+		int dpl = trapentry_table[i + 2];
+		SETGATE(idt[trap_no], 1, GD_KT, func_addr, dpl);
+	}
+
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -190,6 +198,24 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
 
+	switch (tf->tf_trapno) {
+		case T_DEBUG: monitor(tf); break;
+		case T_PGFLT: page_fault_handler(tf); break;
+		case T_BRKPT: monitor(tf); break;
+		case T_SYSCALL: 
+			// The system call number will go in %eax, 
+			// and the arguments (up to five of them) will go in %edx, %ecx, %ebx, %edi, and %esi, respectively.
+			// The kernel passes the return value back in %eax.
+			tf->tf_regs.reg_eax = syscall(
+				tf->tf_regs.reg_eax,
+				tf->tf_regs.reg_edx, tf->tf_regs.reg_ecx, tf->tf_regs.reg_ebx,
+				tf->tf_regs.reg_edi, tf->tf_regs.reg_esi
+			);
+			env_run(curenv);
+			break;
+		default: break;
+	}
+
 	// Unexpected trap: The user process or the kernel has a bug.
 	print_trapframe(tf);
 	if (tf->tf_cs == GD_KT)
@@ -220,6 +246,8 @@ trap(struct Trapframe *tf)
 	// fails, DO NOT be tempted to fix it by inserting a "cli" in
 	// the interrupt path.
 	assert(!(read_eflags() & FL_IF));
+
+	// logd("Incoming TRAP frame at %p", tf);
 
 	if ((tf->tf_cs & 3) == 3) {
 		// Trapped from user mode.
@@ -271,6 +299,11 @@ page_fault_handler(struct Trapframe *tf)
 	// Handle kernel-mode page faults.
 
 	// LAB 3: Your code here.
+	if(tf->tf_es == GD_KD && tf->tf_ds == GD_KD) {
+		cprintf("kernel page fault va %08x ip %08x\n", fault_va, tf->tf_eip);
+		print_trapframe(tf);
+		panic("kernel page fault va %08x ip %08x\n", fault_va, tf->tf_eip);
+	}
 
 	// We've already handled kernel-mode exceptions, so if we get here,
 	// the page fault happened in user mode.

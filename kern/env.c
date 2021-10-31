@@ -119,7 +119,10 @@ env_init(void)
 {
 	// Set up envs array
 	// LAB 3: Your code here.
-
+	env_free_list = &envs[0];
+	for(size_t i = 0; i + 1 < NENV; i++) {
+		envs[i].env_link = &envs[i + 1];
+	}
 	// Per-CPU part of the initialization
 	env_init_percpu();
 }
@@ -182,7 +185,10 @@ env_setup_vm(struct Env *e)
 	//    - The functions in kern/pmap.h are handy.
 
 	// LAB 3: Your code here.
-
+	memcpy(page2kva(p), kern_pgdir, PGSIZE);
+	p->pp_ref++;
+	e->env_pgdir = page2kva(p);
+	
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
 	e->env_pgdir[PDX(UVPT)] = PADDR(e->env_pgdir) | PTE_P | PTE_U;
@@ -258,7 +264,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	env_free_list = e->env_link;
 	*newenv_store = e;
 
-	cprintf("[%08x] new env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	logi("[%08x] new env %08x", curenv ? curenv->env_id : 0, e->env_id);
 	return 0;
 }
 
@@ -279,6 +285,26 @@ region_alloc(struct Env *e, void *va, size_t len)
 	//   'va' and 'len' values that are not page-aligned.
 	//   You should round va down, and round (va + len) up.
 	//   (Watch out for corner-cases!)
+	uintptr_t start = ROUNDDOWN((uintptr_t)va, PGSIZE);
+	uintptr_t end   = ROUNDUP((uintptr_t)va + len, PGSIZE);
+	int errno = 0;
+	for(uintptr_t i = start; i != end; i += PGSIZE) {
+		struct PageInfo * pp = page_alloc(0);
+		if(pp == NULL)
+			panic("page_alloc failed: %e", -E_NO_MEM);
+		if((errno = page_insert(e->env_pgdir, pp, (void*)i, PTE_P | PTE_W | PTE_U)) < 0)
+			panic("page_insert failed: %e", errno);
+	}
+}
+
+static void
+region_copy(struct Env *e, void *dst, void *src, size_t len) {
+	uint32_t cr3 = rcr3();
+	lcr3(PADDR(e->env_pgdir));
+	tlb_invalidate_range(e->env_pgdir, dst, len);
+	if(src) memcpy(dst, src, len);
+	else memset(dst, 0, len);
+	lcr3(cr3);
 }
 
 //
@@ -336,10 +362,31 @@ load_icode(struct Env *e, uint8_t *binary)
 
 	// LAB 3: Your code here.
 
+	struct Elf * eh = (struct Elf *)(binary);
+	assert(eh->e_magic == ELF_MAGIC);
+
+	struct Proghdr * ph_start = (struct Proghdr*)(binary + eh->e_phoff);
+	for(size_t i = 0; i < eh->e_phnum; i++) {
+		struct Proghdr * ph = ph_start + i;
+		if(ph->p_type != ELF_PROG_LOAD) continue;
+		void * va = (void*)ph->p_va;
+		logd("alloc %08x %08x", va, ph->p_memsz);
+		region_alloc(e, va, ph->p_memsz);
+		region_copy(e, va, binary + ph->p_offset, ph->p_filesz);
+		if(ph->p_filesz < ph->p_memsz) {
+			region_copy(e, va + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
+		}
+		// info("map %08x-%08x", ph->p_va, ph->p_va + ph->p_memsz);
+	}
+	// info("entry: %08x", eh->e_entry);
+	e->env_tf.tf_eip = eh->e_entry;
+	
 	// Now map one page for the program's initial stack
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+
+	region_alloc(e, (void*)(USTACKTOP - PGSIZE), PGSIZE);
 }
 
 //
@@ -353,6 +400,12 @@ void
 env_create(uint8_t *binary, enum EnvType type)
 {
 	// LAB 3: Your code here.
+	struct Env * e;
+	int errno;
+	if((errno = env_alloc(&e, 0)) < 0) 
+		panic("env_alloc failed: %e", errno);
+	e->env_type = type;
+	load_icode(e, binary);
 }
 
 //
@@ -372,7 +425,7 @@ env_free(struct Env *e)
 		lcr3(PADDR(kern_pgdir));
 
 	// Note the environment's demise.
-	cprintf("[%08x] free env %08x\n", curenv ? curenv->env_id : 0, e->env_id);
+	logi("[%08x] free env %08x", curenv ? curenv->env_id : 0, e->env_id);
 
 	// Flush all mapped pages in the user portion of the address space
 	static_assert(UTOP % PTSIZE == 0);
@@ -477,12 +530,22 @@ env_run(struct Env *e)
 	//	   registers and drop into user mode in the
 	//	   environment.
 
+	if(curenv && curenv->env_status == ENV_RUNNING) {
+		curenv->env_status = ENV_RUNNABLE;
+	}
+	curenv = e;
+	curenv->env_status = ENV_RUNNING;
+	curenv->env_runs++;
+	lcr3(PADDR(curenv->env_pgdir));
+
 	// Hint: This function loads the new environment's state from
 	//	e->env_tf.  Go back through the code you wrote above
 	//	and make sure you have set the relevant parts of
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+
+	env_pop_tf(&(curenv->env_tf));
 
 	panic("env_run not yet implemented");
 }

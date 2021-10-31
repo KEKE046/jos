@@ -12,6 +12,10 @@
 #include <kern/kdebug.h>
 #include <kern/trap.h>
 
+#include <kern/pmap.h>
+#include <inc/ansiterm.h>
+#include <kern/env.h>
+
 #define CMDBUF_SIZE	80	// enough for one VGA text line
 
 
@@ -25,9 +29,45 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
+	{ "colortest", "Test the console color", mon_color_test},
+	{ "clear", "Clear the screen", mon_clear},
+	{ "mem", "Memory command", mem_memcmd},
+	{ "backtrace", "Backtrace the stack", mon_backtrace},
+	{ "debug", "User code debug", mon_debug}
 };
 
 /***** Implementations of basic kernel monitor commands *****/
+
+int
+mon_color_test(int argc, char ** argv, struct Trapframe * tf) {
+	static const int forecolor[] = {
+		30, 31, 32, 33, 34, 35, 36, 37,
+		90, 91, 92, 93, 94, 95, 96, 97
+	};
+	static const int backcolor[] = {
+		40, 41, 42, 43, 44, 45, 46, 47,
+		100, 101, 102, 103, 104, 105, 106, 107
+	};
+	cprintf("     ");
+	for(int j = 0 ; j < 16; j++) {
+		cprintf("%4d ", j);
+	}
+	cprintf("\n");
+	for(int i = 0; i < 16; i++) {
+		cprintf("%4d ", i);
+		for(int j = 0; j < 16; j++) {
+			cprintf("\033[%d;%dmTEST\033[0m ", backcolor[j], forecolor[i]);
+		}
+		cprintf("\n");
+	}
+	return 0;
+}
+
+int
+mon_clear(int argc, char ** argv, struct Trapframe * tf) {
+	cprintf(AT_ERASE_ALL AT_CUR_POS_HOME);
+	return 0;
+}
 
 int
 mon_help(int argc, char **argv, struct Trapframe *tf)
@@ -58,11 +98,48 @@ mon_kerninfo(int argc, char **argv, struct Trapframe *tf)
 int
 mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 {
-	// Your code here.
+	cprintf("Stack backtrace:\n");
+	struct Eipdebuginfo info;
+	volatile uint32_t * ebp = (uint32_t*)read_ebp(), eip;
+	int errno = 0;
+	do {
+		eip = *(ebp + 1);
+		if((errno=debuginfo_eip(eip - 4, &info)) < 0) {
+			loge("debuginfo_eip(%p) %e", eip - 4, errno);
+			break;
+		}
+		cprintf("  ebp %08x eip %08x args %08x %08x %08x %08x\n",
+			ebp, eip, *(ebp + 2), *(ebp + 3), *(ebp + 4), *(ebp + 5));
+		cprintf("        %s:%d: ", info.eip_file, info.eip_line);
+		for(int i = 0; i < info.eip_fn_namelen; i++) {
+			cputchar(info.eip_fn_name[i]);
+		}
+		cprintf("+%d\n", eip - info.eip_fn_addr);
+		if(ebp == NULL) break;
+		ebp = (uint32_t*)*ebp;
+	} while(ebp);
 	return 0;
 }
 
-
+int
+mon_debug(int argc, char **argv, struct Trapframe * tf) {
+	if(argc > 1) {
+		if(tf->tf_trapno != T_BRKPT) {
+			cprintf("Trap is not a breakpoint, continuing.\n");
+		}
+		char * cmd = argv[1];
+		if(strcmp(cmd, "si") == 0) {
+			tf->tf_eflags |= FL_TF;
+			env_run(curenv);
+		}
+		else if(strcmp(cmd, "c") == 0) {
+			tf->tf_eflags &= ~FL_TF;
+			env_run(curenv);
+		}
+	}
+	cprintf("Usage: debug <si|c>\n");
+	return 0;
+}
 
 /***** Kernel monitor command interpreter *****/
 
@@ -85,6 +162,7 @@ runcmd(char *buf, struct Trapframe *tf)
 			*buf++ = 0;
 		if (*buf == 0)
 			break;
+
 
 		// save and scan past next arg
 		if (argc == MAXARGS-1) {
