@@ -343,5 +343,5 @@ always:
 
 .PHONY: sync
 sync:
-	git pull github && git push --all github
-	cd note && git pull github && git push --all github
+	git push --all github
+	cd note && git push --all github
