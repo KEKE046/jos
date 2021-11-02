@@ -138,24 +138,24 @@ mpconfig(struct mp **pmp)
 	if ((mp = mpsearch()) == 0)
 		return NULL;
 	if (mp->physaddr == 0 || mp->type != 0) {
-		cprintf("SMP: Default configurations not implemented\n");
+		loge("SMP: Default configurations not implemented");
 		return NULL;
 	}
 	conf = (struct mpconf *) KADDR(mp->physaddr);
 	if (memcmp(conf, "PCMP", 4) != 0) {
-		cprintf("SMP: Incorrect MP configuration table signature\n");
+		loge("SMP: Incorrect MP configuration table signature");
 		return NULL;
 	}
 	if (sum(conf, conf->length) != 0) {
-		cprintf("SMP: Bad MP configuration checksum\n");
+		loge("SMP: Bad MP configuration checksum");
 		return NULL;
 	}
 	if (conf->version != 1 && conf->version != 4) {
-		cprintf("SMP: Unsupported MP version %d\n", conf->version);
+		loge("SMP: Unsupported MP version %d", conf->version);
 		return NULL;
 	}
 	if ((sum((uint8_t *)conf + conf->length, conf->xlength) + conf->xchecksum) & 0xff) {
-		cprintf("SMP: Bad MP configuration extended checksum\n");
+		loge("SMP: Bad MP configuration extended checksum");
 		return NULL;
 	}
 	*pmp = mp;
@@ -187,8 +187,7 @@ mp_init(void)
 				cpus[ncpu].cpu_id = ncpu;
 				ncpu++;
 			} else {
-				cprintf("SMP: too many CPUs, CPU %d disabled\n",
-					proc->apicid);
+				logw("SMP: too many CPUs, CPU %d disabled", proc->apicid);
 			}
 			p += sizeof(struct mpproc);
 			continue;
@@ -199,7 +198,7 @@ mp_init(void)
 			p += 8;
 			continue;
 		default:
-			cprintf("mpinit: unknown config type %x\n", *p);
+			loge("mpinit: unknown config type %x", *p);
 			ismp = 0;
 			i = conf->entry;
 		}
@@ -210,15 +209,15 @@ mp_init(void)
 		// Didn't like what we found; fall back to no MP.
 		ncpu = 1;
 		lapicaddr = 0;
-		cprintf("SMP: configuration not found, SMP disabled\n");
+		loge("SMP: configuration not found, SMP disabled");
 		return;
 	}
-	cprintf("SMP: CPU %d found %d CPU(s)\n", bootcpu->cpu_id,  ncpu);
+	logi("SMP: CPU %d found %d CPU(s)", bootcpu->cpu_id,  ncpu);
 
 	if (mp->imcrp) {
 		// [MP 3.2.6.1] If the hardware implements PIC mode,
 		// switch to getting interrupts from the LAPIC.
-		cprintf("SMP: Setting IMCR to switch from PIC mode to symmetric I/O mode\n");
+		logi("SMP: Setting IMCR to switch from PIC mode to symmetric I/O mode");
 		outb(0x22, 0x70);   // Select IMCR
 		outb(0x23, inb(0x23) | 1);  // Mask external interrupts.
 	}
