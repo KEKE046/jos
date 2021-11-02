@@ -7,6 +7,7 @@
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
 
+#define call(statement) do{int r; if((r=(statement)) < 0) return r;} while(0)
 #define perm_check(pte, perm, ...) (((pte) & (perm)) == (perm))
 #define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PTX(UVPT), (idx)*sizeof(pde_t))))
 #define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
@@ -113,26 +114,26 @@ fork(void)
 		for(size_t j = 0; j < NPTENTRIES; j++) {
 			pte_t pte = get_pte(i, j);
 			void * pgaddr = PGADDR(i, j, 0);
-			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE)) // ignore EXSTACK
+			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE)) // ignore UXSTACK
 				continue;
 			if(perm_check(pte, PTE_P | PTE_U | PTE_W)) {
-				duppage(envid, pgaddr);
+				call(duppage(envid, pgaddr));
 			}
 			else if(perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
-				duppage(envid, pgaddr);
+				call(duppage(envid, pgaddr));
 			}
 			else {
-				sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte));
+				call(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
 			}
 		}
 	}
 
-	sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W);
+	call(sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W));
 
 	extern void _pgfault_upcall(void);
-	sys_env_set_pgfault_upcall(0, _pgfault_upcall);
+	call(sys_env_set_pgfault_upcall(0, _pgfault_upcall));
 
-	sys_env_set_status(envid, ENV_RUNNABLE);
+	call(sys_env_set_status(envid, ENV_RUNNABLE));
 	return envid;
 }
 
