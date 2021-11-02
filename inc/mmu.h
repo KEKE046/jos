@@ -74,6 +74,9 @@
 
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)	((physaddr_t) (pte) & ~0xFFF)
+#define PTE_FLAGS(pte)  ((uint32_t)(pte) & 0xFFF)
+#define PDE_ADDR(pde)   ((physaddr_t) (pde) & ~0xFFF)
+#define PDE_FLAGS(pde)  ((uint32_t)(pde) & 0xFFF)
 
 // Control Register flags
 #define CR0_PE		0x00000001	// Protection Enable

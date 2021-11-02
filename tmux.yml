@@ -1,0 +1,8 @@
+name: default
+root: ./
+windows:
+  - qemu:
+      layout: main-vertical
+      panes:
+        - make gdb && tmux kill-server
+        - make qemu-nox-gdb && tmux kill-server

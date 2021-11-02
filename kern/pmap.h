@@ -9,6 +9,9 @@
 #include <inc/memlayout.h>
 #include <inc/assert.h>
 struct Env;
+#include <kern/monitor.h>
+
+// #define PMAP_HUGE_PAGE
 
 extern char bootstacktop[], bootstack[];
 
@@ -62,6 +65,7 @@ struct PageInfo *page_lookup(pde_t *pgdir, void *va, pte_t **pte_store);
 void	page_decref(struct PageInfo *pp);
 
 void	tlb_invalidate(pde_t *pgdir, void *va);
+void    tlb_invalidate_range(pde_t * pgdir, void * va, size_t len);
 
 void *	mmio_map_region(physaddr_t pa, size_t size);
 
@@ -89,5 +93,25 @@ page2kva(struct PageInfo *pp)
 }
 
 pte_t *pgdir_walk(pde_t *pgdir, const void *va, int create);
+
+int pgdir_checkperm(pde_t * pgdir, const void * va, size_t len, int perm, int mask);
+
+int
+memcmd_pde(int argc, char ** argv, struct Trapframe * tf);
+
+int
+memcmd_show(int argc, char ** argv, struct Trapframe * tf);
+
+int
+memcmd_set(int argc, char ** argv, struct Trapframe * tf);
+
+int 
+memcmd_dump(int argc, char ** argv, struct Trapframe * tf);
+
+int 
+memcmd_dumpphy(int argc, char ** argv, struct Trapframe * tf);
+
+int
+mem_memcmd(int argc, char ** argv, struct Trapframe * tf);
 
 #endif /* !JOS_KERN_PMAP_H */

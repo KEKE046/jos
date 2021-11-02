@@ -31,11 +31,12 @@ typedef int32_t envid_t;
 
 // Values of env_status in struct Env
 enum {
-	ENV_FREE = 0,
-	ENV_DYING,
-	ENV_RUNNABLE,
-	ENV_RUNNING,
-	ENV_NOT_RUNNABLE
+	ENV_FREE = 0,    // inactive
+	ENV_DYING,       // will be freed
+	ENV_RUNNABLE,    // active and runnable
+	ENV_RUNNING,     // active and running
+	ENV_NOT_RUNNABLE, // active but blocked
+	ENV_STATUS_MAX    // STATUS_NUM_MAX to check status valid
 };
 
 // Special environment types

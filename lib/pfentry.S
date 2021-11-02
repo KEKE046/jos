@@ -12,15 +12,19 @@
 // exception stack, and then it pushes a UTrapframe onto our user
 // exception stack:
 //
-//	trap-time esp
-//	trap-time eflags
-//	trap-time eip
-//	utf_regs.reg_eax
-//	...
-//	utf_regs.reg_esi
-//	utf_regs.reg_edi
-//	utf_err (error code)
-//	utf_fault_va            <-- %esp
+//	trap-time esp                     48
+//	trap-time eflags                  44
+//	trap-time eip                     40
+//  utf_regs.reg_eax                  36
+//  utf_regs.reg_ecx                  32
+//  utf_regs.reg_edx                  28
+//  utf_regs.reg_ebx                  24
+//  utf_regs.reg_oesp                 20
+//	utf_regs.reg_ebp                  16
+//	utf_regs.reg_esi                  12
+//	utf_regs.reg_edi                   8
+//	utf_err (error code)               4
+//	utf_fault_va            <-- %esp   0
 //
 // If this is a recursive fault, the kernel will reserve for us a
 // blank word above the trap-time esp for scratch work when we unwind
@@ -66,17 +70,50 @@ _pgfault_upcall:
 	//
 	// LAB 4: Your code here.
 
+	//	trap-time esp                     48
+	//	trap-time eflags                  44
+	//	trap-time eip                     40
+	//  utf_regs.reg_eax                  36
+	//  utf_regs.reg_ecx                  32
+	//  utf_regs.reg_edx                  28
+	//  utf_regs.reg_ebx                  24
+	//  utf_regs.reg_oesp                 20
+	//	utf_regs.reg_ebp                  16
+	//	utf_regs.reg_esi                  12
+	//	utf_regs.reg_edi                   8
+	//	utf_err (error code)               4
+	//	utf_fault_va            <-- %esp   0
+
+	movl 40(%esp), %eax
+	movl 48(%esp), %ebx
+	subl $4, %ebx
+	movl %ebx, 48(%esp)
+	movl %eax, (%ebx)
+
 	// Restore the trap-time registers.  After you do this, you
 	// can no longer modify any general-purpose registers.
 	// LAB 4: Your code here.
+
+	addl $8, %esp
+	popal
+	//	trap-time esp                     8
+	//	trap-time eflags                  4
+	//	trap-time eip          <-- %esp   0
 
 	// Restore eflags from the stack.  After you do this, you can
 	// no longer use arithmetic operations or anything else that
 	// modifies eflags.
 	// LAB 4: Your code here.
 
+	addl $4, %esp
+	popfl
+
 	// Switch back to the adjusted trap-time stack.
 	// LAB 4: Your code here.
 
+	popl %esp
+
 	// Return to re-execute the instruction that faulted.
 	// LAB 4: Your code here.
+
+	ret
