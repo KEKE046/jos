@@ -97,7 +97,10 @@ fork(void)
 	set_pgfault_handler(pgfault);
 
 	envid_t envid = sys_exofork();
-	if(!envid) return envid;
+	if(!envid) {
+		thisenv = envs + ENVX(sys_getenvid()); // this is very important
+		return envid;
+	}
 
 	for(size_t i = 0; i < PDX(UTOP); i++) {
 		pde_t pde = get_pde(i);

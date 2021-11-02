@@ -546,9 +546,8 @@ env_run(struct Env *e)
 	// LAB 3: Your code here.
 	assert(e->env_tf.tf_eflags & FL_IF);
 	unlock_kernel();
-	// lapic_eoi();
 	env_pop_tf(&(curenv->env_tf));
 
-	panic("env_run not yet implemented");
+	// panic("env_run not yet implemented");
 }
 
