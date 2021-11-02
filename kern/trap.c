@@ -218,6 +218,9 @@ trap_dispatch(struct Trapframe *tf)
 			env_run(curenv);
 			break;
 		case IRQ_OFFSET + IRQ_TIMER:
+			// tell the lapic the interrupt has finished
+			// for timers, no matter where the eoi signal is,
+			// the next interrupt won't be influenced.
 			lapic_eoi();
 			sched_yield();
 			break;
