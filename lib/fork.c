@@ -9,7 +9,7 @@
 
 #define call(statement) do{int r; if((r=(statement)) < 0) return r;} while(0)
 #define perm_check(pte, perm, ...) (((pte) & (perm)) == (perm))
-#define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PTX(UVPT), (idx)*sizeof(pde_t))))
+#define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PDX(UVPT), (idx)*sizeof(pde_t))))
 #define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
 
 //
@@ -31,11 +31,17 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 
-	if(err != FEC_WR) panic("page fault: reading, %p", addr);
-	pde_t pde = get_pde(PDX(addr));
-	if(!perm_check(pde, PTE_P | PTE_U)) panic("page fault: not accessible %d", addr);
+	//When set, the page fault was caused by a page-protection violation. When not set, it was caused by a non-present page. 
+	if(!(err & FEC_PR)) panic("page fault: access non-present page: %p", addr);
+	//When set, the page fault was caused while CPL = 3. This does not necessarily mean that the page fault was a privilege violation. 
+	if(!(err & FEC_U)) panic("page fault: no permission to access: %p", addr);
+	//When set, the page fault was caused by a write access. When not set, it was caused by a read access
+	if(!(err & FEC_WR)) panic("page fault: not readable: %p", addr);
+
 	pte_t pte = get_pte(PDX(addr), PTX(addr));
-	if(!perm_check(pte, PTE_P | PTE_U | PTE_COW)) panic("page fault: not writable %p", addr);
+	if(!perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
+		panic("page fault: not writable %p", addr);
+	}
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -46,13 +52,13 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 
 	void * page_addr = ROUNDDOWN(addr, PGSIZE);
-	r = sys_page_map(0, page_addr, 0, UTEMP, PTE_P | PTE_U);
-	if(r < 0) panic("copy on write: sys_page_map fail: %e", r);
-	r = sys_page_alloc(0, page_addr, PTE_P | PTE_U | PTE_W);
-	if(r < 0) panic("copy on write: sys_page_alloc fail: %e", r);
-	memmove(page_addr, UTEMP, PGSIZE);
-	sys_page_unmap(0, UTEMP);
-	if(r < 0) panic("copy on wirte: sys_page_unmap fail: %e", r);
+	r = sys_page_alloc(0, UTEMP, PTE_P | PTE_U | PTE_W);
+	if(r < 0) panic("copy on write: fail sys_page_alloc %e", r);
+	memmove(UTEMP, page_addr, PGSIZE);
+	r = sys_page_map(0, UTEMP, 0, page_addr, PTE_P | PTE_U | PTE_W);
+	if(r < 0) panic("copy on write: fail sys_page_map %e", r);
+	r = sys_page_unmap(0, UTEMP);
+	if(r < 0) panic("copy on write: fail sys_page_unmap %e", r);
 }
 
 //
@@ -102,11 +108,12 @@ fork(void)
 {
 	// LAB 4: Your code here.
 	// panic("fork not implemented");
-
 	set_pgfault_handler(pgfault);
 	envid_t envid = sys_exofork();
 
-	if(!envid) return envid;
+	if(!envid) {
+		return envid;
+	}
 
 	for(size_t i = 0; i < PDX(UTOP); i++) {
 		pde_t pde = get_pde(i);
@@ -122,7 +129,7 @@ fork(void)
 			else if(perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
 				call(duppage(envid, pgaddr));
 			}
-			else {
+			else if(perm_check(pte, PTE_P | PTE_U)){
 				call(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
 			}
 		}
@@ -131,7 +138,7 @@ fork(void)
 	call(sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W));
 
 	extern void _pgfault_upcall(void);
-	call(sys_env_set_pgfault_upcall(0, _pgfault_upcall));
+	call(sys_env_set_pgfault_upcall(envid, _pgfault_upcall));
 
 	call(sys_env_set_status(envid, ENV_RUNNABLE));
 	return envid;

@@ -790,12 +790,19 @@ static void _show_pde(pde_t pde) {
 	_show_pte((pte_t)pde);
 }
 
+pde_t * memcmd_get_pgdir() {
+	if(curenv) return curenv->env_pgdir;
+	else return kern_pgdir;
+}
+
+#define memcmd_pgdir memcmd_get_pgdir()
+
 int
 memcmd_pde(int argc, char ** argv, struct Trapframe * tf) {
 	for(size_t i = 0; i < NPDENTRIES; i++) {
 		uintptr_t va = PGSIZE * NPTENTRIES * i;
 		cprintf("%08x ", va);
-		_show_pde(kern_pgdir[PDX(va)]);
+		_show_pde(memcmd_pgdir[PDX(va)]);
 		cprintf("\n");
 	}
 	return 0;
@@ -812,12 +819,12 @@ memcmd_show(int argc, char ** argv, struct Trapframe * tf) {
 	cprintf("mapping from %08x to %08x\n", start, end - PGSIZE);
 	uintptr_t va = start;
 	do {
-		pde_t * ppde = &kern_pgdir[PDX(va)];
+		pde_t * ppde = &memcmd_pgdir[PDX(va)];
 		if(!(*ppde & PTE_P) || (*ppde & PTE_PS)) {
 			cprintf("%08x ", va); _show_pde(*ppde); cprintf("\n");
 		}
 		else {
-			pte_t * ppte = pgdir_walk(kern_pgdir, (void*)va, false);
+			pte_t * ppte = pgdir_walk(memcmd_pgdir, (void*)va, false);
 			assert(ppte);
 			cprintf("%08x ", va); _show_pte(*ppte); cprintf("\n");
 		}
@@ -840,11 +847,11 @@ memcmd_set(int argc, char ** argv, struct Trapframe * tf) {
 #define _memcmd_set_inner(flag) \
 	else if(strcmp(ent, #flag)==0) { \
 		if(pde) {\
-			pde_t * ppde = &kern_pgdir[PDX(va)]; \
+			pde_t * ppde = &memcmd_pgdir[PDX(va)]; \
 			*ppde = (*ppde & (~PTE_##flag)) | (value * PTE_##flag); \
 		} \
 		else { \
-			pte_t * ppte = pgdir_walk(kern_pgdir, (void*)va, true); \
+			pte_t * ppte = pgdir_walk(memcmd_pgdir, (void*)va, true); \
 			if(ppte == NULL) {cprintf("No Available Pages"); return -1;} \
 			*ppte = (*ppte & (~PTE_##flag)) | (value * PTE_##flag); \
 		} \
@@ -852,14 +859,14 @@ memcmd_set(int argc, char ** argv, struct Trapframe * tf) {
 
 	if(strcmp(ent, "pa")==0) {
 		if(pde) {
-			pde_t * ppde = &kern_pgdir[PDX(va)];
+			pde_t * ppde = &memcmd_pgdir[PDX(va)];
 			*ppde = value | PDE_FLAGS(*ppde);
-			tlb_invalidate(kern_pgdir, (void*)va);
+			tlb_invalidate(memcmd_pgdir, (void*)va);
 		}
 		else {
-			pte_t * ppte = pgdir_walk(kern_pgdir, (void*)va, true);
+			pte_t * ppte = pgdir_walk(memcmd_pgdir, (void*)va, true);
 			*ppte = value | PTE_FLAGS(*ppte);
-			tlb_invalidate(kern_pgdir, (void*)va);
+			tlb_invalidate(memcmd_pgdir, (void*)va);
 		}
 	}
 	_memcmd_set_inner(P)

@@ -105,7 +105,7 @@ _pgfault_upcall:
 	// modifies eflags.
 	// LAB 4: Your code here.
 
-	popfl
+	addl $4, %esp
 	popfl
 
 	// Switch back to the adjusted trap-time stack.
