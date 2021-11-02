@@ -51,7 +51,7 @@ sched_halt(void)
 			break;
 	}
 	if (i == NENV) {
-		cprintf("No runnable environments in the system!\n");
+		logi("No runnable environments in the system!");
 		while (1)
 			monitor(NULL);
 	}
