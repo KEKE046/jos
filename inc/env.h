@@ -35,7 +35,8 @@ enum {
 	ENV_DYING,       // will be freed
 	ENV_RUNNABLE,    // active and runnable
 	ENV_RUNNING,     // active and running
-	ENV_NOT_RUNNABLE // active but blocked
+	ENV_NOT_RUNNABLE, // active but blocked
+	ENV_STATUS_MAX    // STATUS_NUM_MAX to check status valid
 };
 
 // Special environment types
