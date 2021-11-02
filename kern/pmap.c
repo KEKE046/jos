@@ -661,6 +661,11 @@ mmio_map_region(physaddr_t pa, size_t size)
 	//
 	// Your code here:
 	panic("mmio_map_region not implemented");
+	size = ROUNDUP(size, PGSIZE);
+	boot_map_region(kern_pgdir, base, size, pa, PTE_P | PTE_PCD | PTE_PWT | PTE_W);
+	uintptr_t ret = base;
+	base += size;
+	return ret;
 }
 
 void
