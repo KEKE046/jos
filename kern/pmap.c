@@ -128,7 +128,7 @@ mem_init(void)
 	size_t n;
 
 #ifdef PMAP_HUGE_PAGE
-	info("Huge page is used !!");
+	logi("Huge page is used !!");
 #endif
 
 	// Find out how much memory the machine has (npages & npages_basemem).
