@@ -38,7 +38,7 @@
 #define PCINT   (0x0340/4)   // Performance Counter LVT
 #define LINT0   (0x0350/4)   // Local Vector Table 1 (LINT0)
 #define LINT1   (0x0360/4)   // Local Vector Table 2 (LINT1)
-#define ERROR   (0x0370/4)   // Local Vector Table 3 (ERROR)
+#define ERROR   (0x0370/4)   // Local Vector Table 3 (ERROR) (LAPIC inner error, mostly useless)
 	#define MASKED     0x00010000   // Interrupt masked
 #define TICR    (0x0380/4)   // Timer Initial Count
 #define TCCR    (0x0390/4)   // Timer Current Count
