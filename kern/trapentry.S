@@ -92,5 +92,5 @@ _alltraps:
 	movw $(GD_KD), %ax
 	movw %ax, %ds
 	movw %ax, %es
-	pushl %esp
+	pushl %esp // the parameter of trap is a pointer, which just points %esp
 	call trap
