@@ -1,2 +1,0 @@
-symbol-file obj/user/forktree
-b lib/fork.c:140
