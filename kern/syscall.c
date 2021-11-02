@@ -306,9 +306,28 @@ static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
-
-	// struct Env * e;
+	// panic("sys_ipc_try_send not implemented");
+	struct Env * dst;
+	ckret(envid2env(envid, &dst, false));
+	astret(dst->env_ipc_recving, -E_IPC_NOT_RECV);
+	dst->env_ipc_recving = 0;
+	dst->env_ipc_from = curenv->env_id;
+	if((uintptr_t)srcva < UTOP && (uintptr_t)dst->env_ipc_dstva < UTOP) {
+		ckret(usr_mem_va_check(srcva));
+		pte_t * pte = pgdir_walk(curenv->env_pgdir, srcva, false);
+		astret(pte, -E_INVAL);
+		astret(is_masked(*pte, PTE_P), -E_INVAL);
+		ckret(usr_mem_perm_check(perm));
+		if((perm & PTE_W) && !(*pte & PTE_W)) return -E_INVAL;
+		ckret(page_insert(dst->env_pgdir, pa2page(PTE_ADDR(*pte)), dst->env_ipc_dstva, perm));
+		dst->env_ipc_perm = perm;
+	}
+	else {
+		dst->env_ipc_perm = 0;
+	}
+	dst->env_ipc_value = value;
+	dst->env_status = ENV_RUNNABLE;
+	return 0;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -326,6 +345,16 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
+	struct Env * e = curenv;
+	if((uintptr_t)dstva < UTOP) {
+		ckret(usr_mem_va_check(dstva));
+	}
+	e->env_ipc_dstva = dstva;
+	e->env_ipc_value = 0;
+	e->env_tf.tf_regs.reg_eax = 0;
+	e->env_ipc_recving = 1;
+	e->env_status = ENV_NOT_RUNNABLE;
+	sched_yield();
 	return 0;
 }
 
@@ -351,6 +380,8 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_page_map:    ret = sys_page_map((envid_t)a1, (void*)a2, (envid_t)(a3), (void*)(a4), (int)a5); break;
 		case SYS_page_unmap:  ret = sys_page_unmap((envid_t)a1, (void*)a2); break;
 		case SYS_env_set_pgfault_upcall: ret = sys_env_set_pgfault_upcall((envid_t)a1, (void*)a2); break;
+		case SYS_ipc_try_send:ret = sys_ipc_try_send((envid_t)a1, (uint32_t)a2, (void*)a3, (unsigned int)a4); break;
+		case SYS_ipc_recv:    ret = sys_ipc_recv((void*)a1); break;
 		default:              ret = -E_INVAL; break;
 	}
 	return ret;
