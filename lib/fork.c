@@ -7,6 +7,10 @@
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
 
+#define perm_check(pte, perm, ...) (((pte) & (perm)) == (perm))
+#define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PTX(UVPT), (idx)*sizeof(pde_t))))
+#define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
+
 //
 // Custom page fault handler - if faulting page is copy-on-write,
 // map in our own private writable copy.
@@ -26,6 +30,12 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 
+	if(err != FEC_WR) panic("page fault: reading, %p", addr);
+	pde_t pde = get_pde(PDX(addr));
+	if(!perm_check(pde, PTE_P | PTE_U)) panic("page fault: not accessible %d", addr);
+	pte_t pte = get_pte(PDX(addr), PTX(addr));
+	if(!perm_check(pte, PTE_P | PTE_U | PTE_COW)) panic("page fault: not writable %p", addr);
+
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
 	// page to the old page's address.
@@ -34,7 +44,14 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 
-	panic("pgfault not implemented");
+	void * page_addr = ROUNDDOWN(addr, PGSIZE);
+	r = sys_page_map(0, page_addr, 0, UTEMP, PTE_P | PTE_U);
+	if(r < 0) panic("copy on write: sys_page_map fail: %e", r);
+	r = sys_page_alloc(0, page_addr, PTE_P | PTE_U | PTE_W);
+	if(r < 0) panic("copy on write: sys_page_alloc fail: %e", r);
+	memmove(page_addr, UTEMP, PGSIZE);
+	sys_page_unmap(0, UTEMP);
+	if(r < 0) panic("copy on wirte: sys_page_unmap fail: %e", r);
 }
 
 //
@@ -49,18 +66,23 @@ pgfault(struct UTrapframe *utf)
 // It is also OK to panic on error.
 //
 static int
-duppage(envid_t envid, unsigned pn)
+duppage(envid_t envid, void * pageaddr)
 {
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+	// panic("duppage not implemented");
+
+	r = sys_page_map(0, pageaddr, envid, pageaddr, PTE_P | PTE_U | PTE_COW);
+	if(r < 0) return r;
+	r = sys_page_map(0, pageaddr, 0, pageaddr, PTE_P | PTE_U | PTE_COW);
+	if(r < 0) return r;
 	return 0;
 }
 
 //
 // User-level fork with copy-on-write.
-// Set up our page fault handler appropriately.
+// Set up our page fault haenvidndler appropriately.
 // Create a child.
 // Copy our address space and page fault handler setup to the child.
 // Then mark the child as runnable and return.
@@ -78,7 +100,40 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	// panic("fork not implemented");
+
+	set_pgfault_handler(pgfault);
+	envid_t envid = sys_exofork();
+
+	if(!envid) return envid;
+
+	for(size_t i = 0; i < PDX(UTOP); i++) {
+		pde_t pde = get_pde(i);
+		if(!perm_check(pde, PTE_P)) continue;
+		for(size_t j = 0; j < NPTENTRIES; j++) {
+			pte_t pte = get_pte(i, j);
+			void * pgaddr = PGADDR(i, j, 0);
+			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE)) // ignore EXSTACK
+				continue;
+			if(perm_check(pte, PTE_P | PTE_U | PTE_W)) {
+				duppage(envid, pgaddr);
+			}
+			else if(perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
+				duppage(envid, pgaddr);
+			}
+			else {
+				sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte));
+			}
+		}
+	}
+
+	sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W);
+
+	extern void _pgfault_upcall(void);
+	sys_env_set_pgfault_upcall(0, _pgfault_upcall);
+
+	sys_env_set_status(envid, ENV_RUNNABLE);
+	return envid;
 }
 
 // Challenge!
