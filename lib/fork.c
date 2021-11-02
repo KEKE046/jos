@@ -29,12 +29,12 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 
-	assert_panic(err & FEC_PR, "page fault: access non-present page: %p", addr);
-	assert_panic(err & FEC_U,  "page fault: no permission to access: %p", addr);
-	assert_panic(err & FEC_WR, "page fault: not readable: %p",            addr);
+	assert_panic(err & FEC_PR, "page fault: access non-present page: %p, eip=%08x", addr, utf->utf_eip);
+	assert_panic(err & FEC_U,  "page fault: no permission to access: %p, eip=%08x", addr, utf->utf_eip);
+	assert_panic(err & FEC_WR, "page fault: not readable: %p, eip=%08x",            addr, utf->utf_eip);
 
 	pte_t pte = get_pte(PDX(addr), PTX(addr));
-	assert_panic(is_masked(pte, PTE_P | PTE_U | PTE_COW), "page fault: not writable %p", addr);
+	assert_panic(is_masked(pte, PTE_P | PTE_U | PTE_COW), "page fault: not writable %p, eip=%08x", addr, utf->utf_eip);
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
