@@ -148,7 +148,11 @@ static int
 sys_env_set_pgfault_upcall(envid_t envid, void *func)
 {
 	// LAB 4: Your code here.
-	panic("sys_env_set_pgfault_upcall not implemented");
+	// panic("sys_env_set_pgfault_upcall not implemented");
+	struct Env * e;
+	check(envid2env(envid, &e, true));
+	e->env_pgfault_upcall = func;
+	return 0;
 }
 
 static int
@@ -351,6 +355,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_page_alloc:  ret = sys_page_alloc((envid_t)a1, (void*)a2, (int)a3); break;
 		case SYS_page_map:    ret = sys_page_map((envid_t)a1, (void*)a2, (envid_t)(a3), (void*)(a4), (int)a5); break;
 		case SYS_page_unmap:  ret = sys_page_unmap((envid_t)a1, (void*)a2); break;
+		case SYS_env_set_pgfault_upcall: ret = sys_env_set_pgfault_upcall((envid_t)a1, (void*)a2); break;
 		default:              ret = -E_INVAL; break;
 	}
 	return ret;
