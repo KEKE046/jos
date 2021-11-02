@@ -36,7 +36,7 @@ sched_yield(void)
 		}
 		if(++i == NENV) i = 0;
 	} while(i != env_id);
-	if(curenv) {
+	if(curenv && (curenv->env_status == ENV_RUNNABLE || curenv->env_status == ENV_RUNNING)) {
 		// if there is no other runnable environment
 		// but curenv is not NULL, return to curenv
 		// logd("return to %08x", curenv->env_id);
