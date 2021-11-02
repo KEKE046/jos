@@ -8,7 +8,7 @@
 #define PTE_COW		0x800
 
 #define call(statement) do{int r; if((r=(statement)) < 0) return r;} while(0)
-#define perm_check(pte, perm) (((pte) & (perm)) == (perm))
+#define chkpte(pte, perm) (((pte) & (perm)) == (perm))
 #define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PDX(UVPT), (idx)*sizeof(pde_t))))
 #define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
 
@@ -32,22 +32,14 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 
 	//When set, the page fault was caused by a page-protection violation. When not set, it was caused by a non-present page. 
-	if(!(err & FEC_PR)) {
-		panic("page fault: access non-present page: %p", addr);
-	}
-	//When set, the page fault was caused while CPL = 3. This does not necessarily mean that the page fault was a privilege violation. 
-	if(!(err & FEC_U)) {
-		panic("page fault: no permission to access: %p", addr);
-	}
+	assert_panic(err & FEC_PR, "page fault: access non-present page: %p", addr);
+	//When set, the page fault was caused while CPL = 3. This does not necessarily mean that the page fault was a privilege violation.
+	assert_panic(err & FEC_U, "page fault: no permission to access: %p", addr);
 	//When set, the page fault was caused by a write access. When not set, it was caused by a read access
-	if(!(err & FEC_WR)) {
-		panic("page fault: not readable: %p", addr);
-	}
+	assert_panic(err & FEC_WR, "page fault: not readable: %p", addr);
 
 	pte_t pte = get_pte(PDX(addr), PTX(addr));
-	if(!perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
-		panic("page fault: not writable %p", addr);
-	}
+	assert_panic(chkpte(pte, PTE_P | PTE_U | PTE_COW), "page fault: not writable %p", addr);
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -58,19 +50,10 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 
 	void * page_addr = ROUNDDOWN(addr, PGSIZE);
-	r = sys_page_alloc(0, UTEMP, PTE_P | PTE_U | PTE_W);
-	if(r < 0) {
-		panic("copy on write: fail sys_page_alloc %e", r);
-	}
+	assert(sys_page_alloc(0, UTEMP, PTE_P | PTE_U | PTE_W) == 0);
 	memmove(UTEMP, page_addr, PGSIZE);
-	r = sys_page_map(0, UTEMP, 0, page_addr, PTE_P | PTE_U | PTE_W);
-	if(r < 0) {
-		panic("copy on write: fail sys_page_map %e", r);
-	}
-	r = sys_page_unmap(0, UTEMP);
-	if(r < 0) {
-		panic("copy on write: fail sys_page_unmap %e", r);
-	}
+	assert(sys_page_map(0, UTEMP, 0, page_addr, PTE_P | PTE_U | PTE_W) == 0);
+	assert(sys_page_unmap(0, UTEMP) == 0);
 }
 
 //
@@ -87,15 +70,9 @@ pgfault(struct UTrapframe *utf)
 static int
 duppage(envid_t envid, void * pageaddr)
 {
-	int r;
-
 	// LAB 4: Your code here.
-	// panic("duppage not implemented");
-
-	r = sys_page_map(0, pageaddr, envid, pageaddr, PTE_P | PTE_U | PTE_COW);
-	if(r < 0) return r;
-	r = sys_page_map(0, pageaddr, 0, pageaddr, PTE_P | PTE_U | PTE_COW);
-	if(r < 0) return r;
+	call(sys_page_map(0, pageaddr, envid, pageaddr, PTE_P | PTE_U | PTE_COW));
+	call(sys_page_map(0, pageaddr, 0, pageaddr, PTE_P | PTE_U | PTE_COW));
 	return 0;
 }
 
@@ -121,27 +98,25 @@ fork(void)
 	// LAB 4: Your code here.
 	// panic("fork not implemented");
 	set_pgfault_handler(pgfault);
-	envid_t envid = sys_exofork();
 
-	if(!envid) {
-		return envid;
-	}
+	envid_t envid = sys_exofork();
+	if(!envid) return envid;
 
 	for(size_t i = 0; i < PDX(UTOP); i++) {
 		pde_t pde = get_pde(i);
-		if(!perm_check(pde, PTE_P)) continue;
+		if(!chkpte(pde, PTE_P)) continue;
 		for(size_t j = 0; j < NPTENTRIES; j++) {
 			pte_t pte = get_pte(i, j);
 			void * pgaddr = PGADDR(i, j, 0);
 			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE)) // ignore UXSTACK
 				continue;
-			if(perm_check(pte, PTE_P | PTE_U | PTE_W)) {
+			if(chkpte(pte, PTE_P | PTE_U | PTE_W)) {
 				call(duppage(envid, pgaddr));
 			}
-			else if(perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
+			else if(chkpte(pte, PTE_P | PTE_U | PTE_COW)) {
 				call(duppage(envid, pgaddr));
 			}
-			else if(perm_check(pte, PTE_P | PTE_U)){
+			else if(chkpte(pte, PTE_P | PTE_U)){
 				call(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
 			}
 		}

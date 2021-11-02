@@ -22,6 +22,9 @@ void _log(const char *file, int line, const char * color, const char *fmt, ...);
 #define assert(x)		\
 	do { if (!(x)) panic("assertion failed: %s", #x); } while (0)
 
+#define assert_panic(x, ...) \
+	do{ if (!(x)) panic(__VA_ARGS__); } while(0)
+
 // static_assert(x) will generate a compile-time error if 'x' is false.
 #define static_assert(x)	switch (x) case 0: case (x):
 
