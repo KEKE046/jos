@@ -25,6 +25,14 @@ void _log(const char *file, int line, const char * color, const char *fmt, ...);
 #define assert_panic(x, ...) \
 	do{ if (!(x)) panic(__VA_ARGS__); } while(0)
 
+#define ckret(statement) \
+	do{ int r=(statement); if(r<0) return r;} while(0)
+
+#define astret(x, errno) \
+	do{ if(!(x)) return errno;} while(0)
+
+#define is_masked(x, mask) (((x) & (mask)) == (mask))
+
 // static_assert(x) will generate a compile-time error if 'x' is false.
 #define static_assert(x)	switch (x) case 0: case (x):
 

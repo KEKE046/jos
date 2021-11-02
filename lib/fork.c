@@ -7,8 +7,6 @@
 // It is one of the bits explicitly allocated to user processes (PTE_AVAIL).
 #define PTE_COW		0x800
 
-#define call(statement) do{int r; if((r=(statement)) < 0) return r;} while(0)
-#define chkpte(pte, perm) (((pte) & (perm)) == (perm))
 #define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PDX(UVPT), (idx)*sizeof(pde_t))))
 #define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
 
@@ -36,7 +34,7 @@ pgfault(struct UTrapframe *utf)
 	assert_panic(err & FEC_WR, "page fault: not readable: %p",            addr);
 
 	pte_t pte = get_pte(PDX(addr), PTX(addr));
-	assert_panic(chkpte(pte, PTE_P | PTE_U | PTE_COW), "page fault: not writable %p", addr);
+	assert_panic(is_masked(pte, PTE_P | PTE_U | PTE_COW), "page fault: not writable %p", addr);
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -68,8 +66,8 @@ static int
 duppage(envid_t envid, void * pageaddr)
 {
 	// LAB 4: Your code here.
-	call(sys_page_map(0, pageaddr, envid, pageaddr, PTE_P | PTE_U | PTE_COW));
-	call(sys_page_map(0, pageaddr, 0,     pageaddr, PTE_P | PTE_U | PTE_COW));
+	ckret(sys_page_map(0, pageaddr, envid, pageaddr, PTE_P | PTE_U | PTE_COW));
+	ckret(sys_page_map(0, pageaddr, 0,     pageaddr, PTE_P | PTE_U | PTE_COW));
 	return 0;
 }
 
@@ -104,29 +102,29 @@ fork(void)
 
 	for(size_t i = 0; i < PDX(UTOP); i++) {
 		pde_t pde = get_pde(i);
-		if(!chkpte(pde, PTE_P)) continue;
+		if(!is_masked(pde, PTE_P)) continue;
 		for(size_t j = 0; j < NPTENTRIES; j++) {
 			pte_t pte = get_pte(i, j);
 			void * pgaddr = PGADDR(i, j, 0);
 			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE)) // ignore UXSTACK
 				continue;
-			if(!chkpte(pte, PTE_P | PTE_U))            // user not accessable
+			if(!is_masked(pte, PTE_P | PTE_U))            // user not accessable
 				continue;
-			if(chkpte(pte, PTE_W) || chkpte(pte, PTE_COW)) {  // COW page
-				call(duppage(envid, pgaddr));
+			if(is_masked(pte, PTE_W) || is_masked(pte, PTE_COW)) {  // COW page
+				ckret(duppage(envid, pgaddr));
 			}
 			else{
-				call(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
+				ckret(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
 			}
 		}
 	}
 
-	call(sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W));
+	ckret(sys_page_alloc(envid, (void*)(UXSTACKTOP - PGSIZE), PTE_P | PTE_U | PTE_W));
 
 	extern void _pgfault_upcall(void);
-	call(sys_env_set_pgfault_upcall(envid, _pgfault_upcall));
+	ckret(sys_env_set_pgfault_upcall(envid, _pgfault_upcall));
 
-	call(sys_env_set_status(envid, ENV_RUNNABLE));
+	ckret(sys_env_set_status(envid, ENV_RUNNABLE));
 	return envid;
 }
 

@@ -13,8 +13,6 @@
 #include <kern/sched.h>
 #include <inc/ansiterm.h>
 
-#define check(statement) do{ int errno; if((errno = (statement)) < 0) return errno; } while(0)
-
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
 // Destroys the environment on memory errors.
@@ -62,9 +60,8 @@ sys_env_destroy(envid_t envid)
 {
 	int r;
 	struct Env *e;
-
-	if ((r = envid2env(envid, &e, 1)) < 0)
-		return r;
+	
+	ckret(envid2env(envid, &e, 1));
 	if (e == curenv)
 		cprintf("[%08x] exiting gracefully\n", curenv->env_id);
 	else
@@ -96,11 +93,8 @@ sys_exofork(void)
 	// LAB 4: Your code here.
 	// panic("sys_exofork not implemented");
 	
-	int errno = 0;
 	struct Env * e;
-	if((errno = env_alloc(&e, curenv->env_id)) < 0) {
-		return errno;
-	}
+	ckret(env_alloc(&e, curenv->env_id));
 	e->env_status = ENV_NOT_RUNNABLE;
 	e->env_tf = curenv->env_tf;
 	e->env_tf.tf_regs.reg_eax = 0; // child returns 0
@@ -150,7 +144,7 @@ sys_env_set_pgfault_upcall(envid_t envid, void *func)
 	// LAB 4: Your code here.
 	// panic("sys_env_set_pgfault_upcall not implemented");
 	struct Env * e;
-	check(envid2env(envid, &e, true));
+	ckret(envid2env(envid, &e, true));
 	e->env_pgfault_upcall = func;
 	return 0;
 }
@@ -199,11 +193,11 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	// LAB 4: Your code here.
 	// panic("sys_page_alloc not implemented");
 	struct Env * e;
-	check(envid2env(envid, &e, true));
+	ckret(envid2env(envid, &e, true));
 	struct PageInfo * pg = page_alloc(0);
 	if(pg == NULL) return -E_NO_MEM;
-	check(usr_mem_perm_check(perm));
-	check(page_insert(e->env_pgdir, pg, va, perm));
+	ckret(usr_mem_perm_check(perm));
+	ckret(page_insert(e->env_pgdir, pg, va, perm));
 	return 0;
 }
 
@@ -238,15 +232,15 @@ sys_page_map(envid_t srcenvid, void *srcva,
 	// panic("sys_page_map not implemented");
 
 	struct Env * src, * dst;
-	check(envid2env(srcenvid, &src, true));
-	check(envid2env(dstenvid, &dst, true));
-	check(usr_mem_va_check(srcva));
-	check(usr_mem_va_check(dstva));
-	check(usr_mem_perm_check(perm));
+	ckret(envid2env(srcenvid, &src, true));
+	ckret(envid2env(dstenvid, &dst, true));
+	ckret(usr_mem_va_check(srcva));
+	ckret(usr_mem_va_check(dstva));
+	ckret(usr_mem_perm_check(perm));
 	pte_t * srcpte = pgdir_walk(src->env_pgdir, srcva, false);
 	if(srcpte == NULL) return -E_INVAL;
 	if((perm & PTE_W) && !(*srcpte & PTE_W)) return -E_INVAL;
-	check(page_insert(dst->env_pgdir, pa2page(PTE_ADDR(*srcpte)), dstva, perm));
+	ckret(page_insert(dst->env_pgdir, pa2page(PTE_ADDR(*srcpte)), dstva, perm));
 	return 0;
 }
 
@@ -265,7 +259,7 @@ sys_page_unmap(envid_t envid, void *va)
 	// LAB 4: Your code here.
 	// panic("sys_page_unmap not implemented");
 	struct Env * e;
-	check(envid2env(envid, &e, true));
+	ckret(envid2env(envid, &e, true));
 	page_remove(e->env_pgdir, va);
 	return 0;
 }
@@ -313,6 +307,8 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
 	panic("sys_ipc_try_send not implemented");
+
+	// struct Env * e;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -330,7 +326,6 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
 	return 0;
 }
 
