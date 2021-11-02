@@ -14,17 +14,19 @@
 #define ID      (0x0020/4)   // ID
 #define VER     (0x0030/4)   // Version
 #define TPR     (0x0080/4)   // Task Priority
-#define EOI     (0x00B0/4)   // EOI
+#define EOI     (0x00B0/4)   // EOI (End of Interrupt, write only, write 0 to tell apic interrupt finish)
 #define SVR     (0x00F0/4)   // Spurious Interrupt Vector
 	#define ENABLE     0x00000100   // Unit Enable
 #define ESR     (0x0280/4)   // Error Status
-#define ICRLO   (0x0300/4)   // Interrupt Command
+#define ICRLO   (0x0300/4)   // Interrupt Command (Low 0~7 is the interrupt vector), write here to create a interrupt
 	#define INIT       0x00000500   // INIT/RESET
 	#define STARTUP    0x00000600   // Startup IPI
-	#define DELIVS     0x00001000   // Delivery status
-	#define ASSERT     0x00004000   // Assert interrupt (vs deassert)
+	#define DELIVS     0x00001000   // Delivery status (read only, 0 means target cpu not received, 1 means received)
+	#define ASSERT     0x00004000   // Assert interrupt (vs deassert) (confusing, different cpu has different meanings)
 	#define DEASSERT   0x00000000
-	#define LEVEL      0x00008000   // Level triggered
+	#define LEVEL      0x00008000   // Level triggered 
+	// when target cpu finish the level triggered interrupt, the EOI message will broadcast to all processer,
+	// the corresponding bit of TMR(not declared here) need to be set 1
 	#define BCAST      0x00080000   // Send to all APICs, including self.
 	#define OTHERS     0x000C0000   // Send to all APICs, excluding self.
 	#define BUSY       0x00001000
