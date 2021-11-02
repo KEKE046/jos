@@ -78,7 +78,7 @@ trap_init(void)
 		uintptr_t func_addr = trapentry_table[i];
 		int trap_no = trapentry_table[i + 1];
 		int dpl = trapentry_table[i + 2];
-		SETGATE(idt[trap_no], 1, GD_KT, func_addr, dpl);
+		SETGATE(idt[trap_no], 0, GD_KT, func_addr, dpl);
 	}
 
 	// Per-CPU setup 

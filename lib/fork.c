@@ -31,12 +31,9 @@ pgfault(struct UTrapframe *utf)
 
 	// LAB 4: Your code here.
 
-	//When set, the page fault was caused by a page-protection violation. When not set, it was caused by a non-present page. 
 	assert_panic(err & FEC_PR, "page fault: access non-present page: %p", addr);
-	//When set, the page fault was caused while CPL = 3. This does not necessarily mean that the page fault was a privilege violation.
-	assert_panic(err & FEC_U, "page fault: no permission to access: %p", addr);
-	//When set, the page fault was caused by a write access. When not set, it was caused by a read access
-	assert_panic(err & FEC_WR, "page fault: not readable: %p", addr);
+	assert_panic(err & FEC_U,  "page fault: no permission to access: %p", addr);
+	assert_panic(err & FEC_WR, "page fault: not readable: %p",            addr);
 
 	pte_t pte = get_pte(PDX(addr), PTX(addr));
 	assert_panic(chkpte(pte, PTE_P | PTE_U | PTE_COW), "page fault: not writable %p", addr);
@@ -72,7 +69,7 @@ duppage(envid_t envid, void * pageaddr)
 {
 	// LAB 4: Your code here.
 	call(sys_page_map(0, pageaddr, envid, pageaddr, PTE_P | PTE_U | PTE_COW));
-	call(sys_page_map(0, pageaddr, 0, pageaddr, PTE_P | PTE_U | PTE_COW));
+	call(sys_page_map(0, pageaddr, 0,     pageaddr, PTE_P | PTE_U | PTE_COW));
 	return 0;
 }
 
@@ -110,13 +107,12 @@ fork(void)
 			void * pgaddr = PGADDR(i, j, 0);
 			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE)) // ignore UXSTACK
 				continue;
-			if(chkpte(pte, PTE_P | PTE_U | PTE_W)) {
+			if(!chkpte(pte, PTE_P | PTE_U))            // user not accessable
+				continue;
+			if(chkpte(pte, PTE_W) || chkpte(pte, PTE_COW)) {  // COW page
 				call(duppage(envid, pgaddr));
 			}
-			else if(chkpte(pte, PTE_P | PTE_U | PTE_COW)) {
-				call(duppage(envid, pgaddr));
-			}
-			else if(chkpte(pte, PTE_P | PTE_U)){
+			else{
 				call(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
 			}
 		}
