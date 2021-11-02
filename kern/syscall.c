@@ -286,6 +286,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		case SYS_cputs:             sys_cputs((const char *)a1, a2); break;
 		case SYS_env_destroy: ret = sys_env_destroy(a1); break;
 		case SYS_getenvid:    ret = sys_getenvid(); break;
+		case SYS_yield:       sched_yield(); break;
 		default:              ret = -E_INVAL; break;
 	}
 	return ret;
