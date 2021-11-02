@@ -249,11 +249,11 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	e->env_tf.tf_ss = GD_UD | 3;
 	e->env_tf.tf_esp = USTACKTOP;
 	e->env_tf.tf_cs = GD_UT | 3;
-	e->env_tf.tf_eflags = FL_IF;
 	// You will set e->env_tf.tf_eip later.
 
 	// Enable interrupts while in user mode.
 	// LAB 4: Your code here.
+	e->env_tf.tf_eflags = FL_IF;
 
 	// Clear the page fault handler until user installs one.
 	e->env_pgfault_upcall = 0;
@@ -530,7 +530,6 @@ env_run(struct Env *e)
 	// Step 2: Use env_pop_tf() to restore the environment's
 	//	   registers and drop into user mode in the
 	//	   environment.
-
 	if(curenv && curenv->env_status == ENV_RUNNING) {
 		curenv->env_status = ENV_RUNNABLE;
 	}
@@ -545,7 +544,9 @@ env_run(struct Env *e)
 	//	e->env_tf to sensible values.
 
 	// LAB 3: Your code here.
+	assert(e->env_tf.tf_eflags & FL_IF);
 	unlock_kernel();
+	// lapic_eoi();
 	env_pop_tf(&(curenv->env_tf));
 
 	panic("env_run not yet implemented");

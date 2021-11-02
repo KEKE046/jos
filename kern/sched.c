@@ -32,6 +32,7 @@ sched_yield(void)
 	size_t i = env_id;
 	do {
 		if(envs[i].env_status == ENV_RUNNABLE) {
+			// logd("yield to %08x", envs[i].env_id);
 			env_run(&envs[i]);
 		}
 		if(++i == NENV) i = 0;
@@ -39,6 +40,7 @@ sched_yield(void)
 	if(curenv) {
 		// if there is no other runnable environment
 		// but curenv is not NULL, return to curenv
+		// logd("return to %08x", curenv->env_id);
 		env_run(curenv);
 	}
 
@@ -79,6 +81,7 @@ sched_halt(void)
 
 	// Release the big kernel lock as if we were "leaving" the kernel
 	unlock_kernel();
+	// lapic_eoi();
 
 	// Reset stack pointer, enable interrupts and then halt.
 	asm volatile (
