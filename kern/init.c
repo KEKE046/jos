@@ -99,7 +99,7 @@ mp_main(void)
 {
 	// We are in high EIP now, safe to switch to kern_pgdir 
 	lcr3(PADDR(kern_pgdir));
-	cprintf("SMP: CPU %d starting\n", cpunum());
+	logp("SMP: CPU %d starting", cpunum());
 
 	lapic_init();
 	env_init_percpu();
