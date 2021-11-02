@@ -133,6 +133,7 @@ mem_init(void)
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
+	// logd("mem_init, npages=%d, npages_basemem=%d", npages, npages_basemem);
 
 	// Remove this line when you're ready to test this function.
 
@@ -325,6 +326,7 @@ page_init(void)
 	// at system start, the lower memory is mapped into the initial pagetable
 	// so I put these pages into the top of page_free_list
 	for(size_t i = 1; i < npages_basemem; i++) {
+		if(i == PGNUM(MPENTRY_PADDR)) continue;
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -660,12 +662,12 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+	// panic("mmio_map_region not implemented");
 	size = ROUNDUP(size, PGSIZE);
 	boot_map_region(kern_pgdir, base, size, pa, PTE_P | PTE_PCD | PTE_PWT | PTE_W);
 	uintptr_t ret = base;
 	base += size;
-	return ret;
+	return (void*)ret;
 }
 
 void
