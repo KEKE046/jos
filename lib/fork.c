@@ -8,7 +8,7 @@
 #define PTE_COW		0x800
 
 #define call(statement) do{int r; if((r=(statement)) < 0) return r;} while(0)
-#define perm_check(pte, perm, ...) (((pte) & (perm)) == (perm))
+#define perm_check(pte, perm) (((pte) & (perm)) == (perm))
 #define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PDX(UVPT), (idx)*sizeof(pde_t))))
 #define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
 
@@ -32,11 +32,17 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 
 	//When set, the page fault was caused by a page-protection violation. When not set, it was caused by a non-present page. 
-	if(!(err & FEC_PR)) panic("page fault: access non-present page: %p", addr);
+	if(!(err & FEC_PR)) {
+		panic("page fault: access non-present page: %p", addr);
+	}
 	//When set, the page fault was caused while CPL = 3. This does not necessarily mean that the page fault was a privilege violation. 
-	if(!(err & FEC_U)) panic("page fault: no permission to access: %p", addr);
+	if(!(err & FEC_U)) {
+		panic("page fault: no permission to access: %p", addr);
+	}
 	//When set, the page fault was caused by a write access. When not set, it was caused by a read access
-	if(!(err & FEC_WR)) panic("page fault: not readable: %p", addr);
+	if(!(err & FEC_WR)) {
+		panic("page fault: not readable: %p", addr);
+	}
 
 	pte_t pte = get_pte(PDX(addr), PTX(addr));
 	if(!perm_check(pte, PTE_P | PTE_U | PTE_COW)) {
@@ -53,12 +59,18 @@ pgfault(struct UTrapframe *utf)
 
 	void * page_addr = ROUNDDOWN(addr, PGSIZE);
 	r = sys_page_alloc(0, UTEMP, PTE_P | PTE_U | PTE_W);
-	if(r < 0) panic("copy on write: fail sys_page_alloc %e", r);
+	if(r < 0) {
+		panic("copy on write: fail sys_page_alloc %e", r);
+	}
 	memmove(UTEMP, page_addr, PGSIZE);
 	r = sys_page_map(0, UTEMP, 0, page_addr, PTE_P | PTE_U | PTE_W);
-	if(r < 0) panic("copy on write: fail sys_page_map %e", r);
+	if(r < 0) {
+		panic("copy on write: fail sys_page_map %e", r);
+	}
 	r = sys_page_unmap(0, UTEMP);
-	if(r < 0) panic("copy on write: fail sys_page_unmap %e", r);
+	if(r < 0) {
+		panic("copy on write: fail sys_page_unmap %e", r);
+	}
 }
 
 //
