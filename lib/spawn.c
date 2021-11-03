@@ -283,22 +283,22 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 	}
 
 	for (i = 0; i < memsz; i += PGSIZE) {
+		if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
+			return r;
 		if (i >= filesz) {
-			// allocate a blank page
-			if ((r = sys_page_alloc(child, (void*) (va + i), perm)) < 0)
-				return r;
+			memset(UTEMP, 0, PGSIZE);
 		} else {
 			// from file
-			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
-				return r;
 			if ((r = seek(fd, fileoffset + i)) < 0)
 				return r;
-			if ((r = readn(fd, UTEMP, MIN(PGSIZE, filesz-i))) < 0)
+			size_t payload_size = MIN(PGSIZE, filesz-i);
+			if ((r = readn(fd, UTEMP, payload_size)) < 0)
 				return r;
-			if ((r = sys_page_map(0, UTEMP, child, (void*) (va + i), perm)) < 0)
-				panic("spawn: sys_page_map data: %e", r);
-			sys_page_unmap(0, UTEMP);
+			memset(UTEMP + payload_size, 0, PGSIZE - payload_size);
 		}
+		if ((r = sys_page_map(0, UTEMP, child, (void*)(va + i), perm)) < 0)
+			panic("spawn: sys_page_map data: %e", r);
+		sys_page_unmap(0, UTEMP);
 	}
 	return 0;
 }
