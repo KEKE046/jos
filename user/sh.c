@@ -58,11 +58,12 @@ again:
 			// LAB 5: Your code here.
 			// panic("< redirection not implemented");
 			if ((fd = open(t, O_RDONLY)) < 0) {
-				loge("open %s for write: %e", t, fd);
+				loge("open %s for read: %e", t, fd);
 				exit();
 			}
-			if (fd != 1) {
-				dup(fd, 1);
+			logd("fd: %d", fd);
+			if (fd != 0) {
+				dup(fd, 0);
 				close(fd);
 			}
 			break;
