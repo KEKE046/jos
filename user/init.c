@@ -25,17 +25,17 @@ umain(int argc, char **argv)
 	int i, r, x, want;
 	char args[256];
 
-	logp("init: running");
+	clogp("init: running");
 
 	want = 0xf989e;
 	if ((x = sum((char*)&data, sizeof data)) != want)
-		logw("init: data is not initialized: got sum %08x wanted %08x", x, want);
+		clogw("init: data is not initialized: got sum %08x wanted %08x", x, want);
 	else
-		logi("init: data seems okay");
+		clogi("init: data seems okay");
 	if ((x = sum(bss, sizeof bss)) != 0)
-		logw("bss is not initialized: wanted sum 0 got %08x", x);
+		clogw("bss is not initialized: wanted sum 0 got %08x", x);
 	else
-		logi("init: bss seems okay");
+		clogi("init: bss seems okay");
 
 	// output in one syscall per line to avoid output interleaving 
 	strcat(args, "init: args:");
@@ -57,10 +57,10 @@ umain(int argc, char **argv)
 	if ((r = dup(0, 1)) < 0)
 		panic("dup: %e", r);
 	while (1) {
-		logp("init: starting sh");
+		clogp("init: starting sh");
 		r = spawnl("/sh", "sh", (char*)0);
 		if (r < 0) {
-			loge("init: spawn sh: %e", r);
+			cloge("init: spawn sh: %e", r);
 			continue;
 		}
 		wait(r);

@@ -19,7 +19,7 @@
 static void
 sys_cputs(const char *s, size_t len)
 {
-	// logi("sys_puts(%08x,%d)", s, len);
+	// clogi("sys_puts(%08x,%d)", s, len);
 	// Check that the user has permission to read memory [s, s+len).
 	// Destroy the environment if not.
 

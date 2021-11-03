@@ -13,11 +13,11 @@ void _log(const char *file, int line, const char * color, const char *fmt, ...);
 
 #define warn(...) _warn(__FILE__, __LINE__, __VA_ARGS__)
 #define panic(...) _panic(__FILE__, __LINE__, __VA_ARGS__)
-#define logd(...) _log(__FILE__, __LINE__, AT_BRI_BLK, __VA_ARGS__)
-#define logi(...) _log(__FILE__, __LINE__, AT_BRI_GRN, __VA_ARGS__)
-#define logp(...) _log(__FILE__, __LINE__, AT_BRI_MAG, __VA_ARGS__)
-#define logw(...) _log(__FILE__, __LINE__, AT_BRI_YLW, __VA_ARGS__)
-#define loge(...) _log(__FILE__, __LINE__, AT_BRI_RED, __VA_ARGS__)
+#define clogd(...) _log(__FILE__, __LINE__, AT_BRI_BLK, __VA_ARGS__)
+#define clogi(...) _log(__FILE__, __LINE__, AT_BRI_GRN, __VA_ARGS__)
+#define clogp(...) _log(__FILE__, __LINE__, AT_BRI_MAG, __VA_ARGS__)
+#define clogw(...) _log(__FILE__, __LINE__, AT_BRI_YLW, __VA_ARGS__)
+#define cloge(...) _log(__FILE__, __LINE__, AT_BRI_RED, __VA_ARGS__)
 
 #define assert(x)		\
 	do { if (!(x)) panic("assertion failed: %s", #x); } while (0)

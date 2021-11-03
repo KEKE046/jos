@@ -40,7 +40,7 @@ sched_yield(void)
 	if(curenv && (curenv->env_status == ENV_RUNNABLE || curenv->env_status == ENV_RUNNING)) {
 		// if there is no other runnable environment
 		// but curenv is not NULL, return to curenv
-		// logd("return to %08x", curenv->env_id);
+		// clogd("return to %08x", curenv->env_id);
 		env_run(curenv);
 	}
 
@@ -65,7 +65,7 @@ sched_halt(void)
 			break;
 	}
 	if (i == NENV) {
-		logi("No runnable environments in the system!");
+		clogi("No runnable environments in the system!");
 		while (1)
 			monitor(NULL);
 	}

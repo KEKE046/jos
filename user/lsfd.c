@@ -3,7 +3,7 @@
 void
 usage(void)
 {
-	loge("usage: lsfd [-1]");
+	cloge("usage: lsfd [-1]");
 	exit();
 }
 

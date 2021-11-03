@@ -265,7 +265,7 @@ env_alloc(struct Env **newenv_store, envid_t parent_id)
 	env_free_list = e->env_link;
 	*newenv_store = e;
 
-	// logi("[%08x] new env %08x", curenv ? curenv->env_id : 0, e->env_id);
+	// clogi("[%08x] new env %08x", curenv ? curenv->env_id : 0, e->env_id);
 	return 0;
 }
 
@@ -371,7 +371,7 @@ load_icode(struct Env *e, uint8_t *binary)
 		struct Proghdr * ph = ph_start + i;
 		if(ph->p_type != ELF_PROG_LOAD) continue;
 		void * va = (void*)ph->p_va;
-		// logd("alloc %08x %08x", va, ph->p_memsz);
+		// clogd("alloc %08x %08x", va, ph->p_memsz);
 		region_alloc(e, va, ph->p_memsz);
 		region_copy(e, va, binary + ph->p_offset, ph->p_filesz);
 		if(ph->p_filesz < ph->p_memsz) {
@@ -432,7 +432,7 @@ env_free(struct Env *e)
 		lcr3(PADDR(kern_pgdir));
 
 	// Note the environment's demise.
-	// logi("[%08x] free env %08x", curenv ? curenv->env_id : 0, e->env_id);
+	// clogi("[%08x] free env %08x", curenv ? curenv->env_id : 0, e->env_id);
 
 	// Flush all mapped pages in the user portion of the address space
 	static_assert(UTOP % PTSIZE == 0);

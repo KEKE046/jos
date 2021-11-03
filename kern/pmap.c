@@ -56,7 +56,7 @@ i386_detect_memory(void)
 	npages = totalmem / (PGSIZE / 1024);
 	npages_basemem = basemem / (PGSIZE / 1024);
 
-	logi("Physical memory: %uK available, base = %uK, extended = %uK",
+	clogi("Physical memory: %uK available, base = %uK, extended = %uK",
 		totalmem, basemem, totalmem - basemem);
 }
 
@@ -131,12 +131,12 @@ mem_init(void)
 	size_t n;
 
 #ifdef PMAP_HUGE_PAGE
-	logi("Huge page is used !!");
+	clogi("Huge page is used !!");
 #endif
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
-	// logd("mem_init, npages=%d, npages_basemem=%d", npages, npages_basemem);
+	// clogd("mem_init, npages=%d, npages_basemem=%d", npages, npages_basemem);
 
 	// Remove this line when you're ready to test this function.
 
@@ -722,7 +722,7 @@ user_mem_check(struct Env *env, const void *_va, size_t len, int perm)
 			uintptr_t fail_addr = i;
 			if(fail_addr < va) fail_addr = va;
 			if(fail_addr >= va + len) fail_addr = va + len - 1;
-			loge("[%08x] user_mem_check assertion failure for va %08x", env->env_id, fail_addr);
+			cloge("[%08x] user_mem_check assertion failure for va %08x", env->env_id, fail_addr);
 			return -E_FAULT;
 		}
 	}
@@ -740,7 +740,7 @@ void
 user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
 {
 	if (user_mem_check(env, va, len, perm | PTE_U) < 0) {
-		loge("[%08x] user_mem_check assertion failure for "
+		cloge("[%08x] user_mem_check assertion failure for "
 			"va %08x", env->env_id, user_mem_check_addr);
 		env_destroy(env);	// may not return
 	}
@@ -1018,7 +1018,7 @@ check_page_free_list(bool only_low_memory)
 	assert(nfree_basemem > 0);
 	assert(nfree_extmem > 0);
 
-	logd("check_page_free_list() succeeded!");
+	clogd("check_page_free_list() succeeded!");
 }
 
 //
@@ -1096,7 +1096,7 @@ check_page_alloc(void)
 		--nfree;
 	assert(nfree == 0);
 
-	logd("check_page_alloc() succeeded!");
+	clogd("check_page_alloc() succeeded!");
 }
 
 //pgdir
@@ -1159,7 +1159,7 @@ check_kern_pgdir(void)
 			break;
 		}
 	}
-	logd("check_kern_pgdir() succeeded!");
+	clogd("check_kern_pgdir() succeeded!");
 }
 
 // This function returns the physical address of the page containing 'va',
@@ -1360,7 +1360,7 @@ check_page(void)
 	*pgdir_walk(kern_pgdir, (void*) mm2, 0) = 0;
 
 	// cprintf("check_page() succeeded!\n");
-	logd("check_page() succeeded!");
+	clogd("check_page() succeeded!");
 }
 
 // check page_insert, page_remove, &c, with an installed kern_pgdir
@@ -1402,5 +1402,5 @@ check_page_installed_pgdir(void)
 	// free the pages we took
 	page_free(pp0);
 
-	logd("check_page_installed_pgdir() succeeded!");
+	clogd("check_page_installed_pgdir() succeeded!");
 }

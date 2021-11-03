@@ -4,7 +4,7 @@
 #include <inc/memlayout.h>
 #include <inc/trap.h>
 
-# Shift Right Logical 
+# Shift Right clogical 
 #define SRL(val, shamt)		(((val) >> (shamt)) & ~(-1 << (32 - (shamt))))
 
 

@@ -105,7 +105,7 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	do {
 		eip = *(ebp + 1);
 		if((errno=debuginfo_eip(eip - 4, &info)) < 0) {
-			loge("debuginfo_eip(%p) %e", eip - 4, errno);
+			cloge("debuginfo_eip(%p) %e", eip - 4, errno);
 			break;
 		}
 		cprintf("  ebp %08x eip %08x args %08x %08x %08x %08x\n",

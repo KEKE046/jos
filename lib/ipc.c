@@ -29,13 +29,13 @@ ipc_recv(envid_t *from_env_store, void *pg, int *perm_store)
 	if(r < 0) {
 		if(from_env_store) *from_env_store = 0;
 		if(perm_store) *perm_store = 0;
-		// logd("recv error");
+		// clogd("recv error");
 		return r;
 	}
 	else {
 		if(from_env_store) *from_env_store = thisenv->env_ipc_from;
 		if(perm_store)     *perm_store     = thisenv->env_ipc_perm;
-		// logd("recv: %d", thisenv->env_ipc_value);
+		// clogd("recv: %d", thisenv->env_ipc_value);
 		return thisenv->env_ipc_value;
 	}
 }

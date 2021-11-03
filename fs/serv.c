@@ -110,7 +110,7 @@ serve_open(envid_t envid, struct Fsreq_open *req,
 	struct OpenFile *o;
 
 	if (debug)
-		logd("serve_open %08x %s 0x%x", envid, req->req_path, req->req_omode);
+		clogd("serve_open %08x %s 0x%x", envid, req->req_path, req->req_omode);
 
 	// Copy in the path, making sure it's null-terminated
 	memmove(path, req->req_path, MAXPATHLEN);
@@ -119,7 +119,7 @@ serve_open(envid_t envid, struct Fsreq_open *req,
 	// Find an open file ID
 	if ((r = openfile_alloc(&o)) < 0) {
 		if (debug)
-			logd("openfile_alloc failed: %e", r);
+			clogd("openfile_alloc failed: %e", r);
 		return r;
 	}
 	fileid = r;
@@ -130,14 +130,14 @@ serve_open(envid_t envid, struct Fsreq_open *req,
 			if (!(req->req_omode & O_EXCL) && r == -E_FILE_EXISTS)
 				goto try_open;
 			if (debug)
-				logd("file_create failed: %e", r);
+				clogd("file_create failed: %e", r);
 			return r;
 		}
 	} else {
 try_open:
 		if ((r = file_open(path, &f)) < 0) {
 			if (debug)
-				logd("file_open failed: %e", r);
+				clogd("file_open failed: %e", r);
 			return r;
 		}
 	}
@@ -146,13 +146,13 @@ try_open:
 	if (req->req_omode & O_TRUNC) {
 		if ((r = file_set_size(f, 0)) < 0) {
 			if (debug)
-				logd("file_set_size failed: %e", r);
+				clogd("file_set_size failed: %e", r);
 			return r;
 		}
 	}
 	if ((r = file_open(path, &f)) < 0) {
 		if (debug)
-			logd("file_open failed: %e", r);
+			clogd("file_open failed: %e", r);
 		return r;
 	}
 
@@ -166,7 +166,7 @@ try_open:
 	o->o_mode = req->req_omode;
 
 	if (debug)
-		logd("sending success, page %08x", (uintptr_t) o->o_fd);
+		clogd("sending success, page %08x", (uintptr_t) o->o_fd);
 
 	// Share the FD page with the caller by setting *pg_store,
 	// store its permission in *perm_store
@@ -211,7 +211,7 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	struct Fsret_read *ret = &ipc->readRet;
 
 	if (debug)
-		logd("serve_read %08x %08x %08x", envid, req->req_fileid, req->req_n);
+		clogd("serve_read %08x %08x %08x", envid, req->req_fileid, req->req_n);
 
 	// Lab 5: Your code here:
 
@@ -231,7 +231,7 @@ int
 serve_write(envid_t envid, struct Fsreq_write *req)
 {
 	if (debug)
-		logd("serve_write %08x %08x %08x", envid, req->req_fileid, req->req_n);
+		clogd("serve_write %08x %08x %08x", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
 	// panic("serve_write not implemented");
@@ -313,12 +313,12 @@ serve(void)
 		perm = 0;
 		req = ipc_recv((int32_t *) &whom, fsreq, &perm);
 		if (debug)
-			logd("fs req %d from %08x [page %08x: %s]",
+			clogd("fs req %d from %08x [page %08x: %s]",
 				req, whom, uvpt[PGNUM(fsreq)], fsreq);
 
 		// All requests must contain an argument page
 		if (!(perm & PTE_P)) {
-			logd("Invalid request from %08x: no argument page",
+			clogd("Invalid request from %08x: no argument page",
 				whom);
 			continue; // just leave it hanging...
 		}
@@ -329,7 +329,7 @@ serve(void)
 		} else if (req < ARRAY_SIZE(handlers) && handlers[req]) {
 			r = handlers[req](whom, fsreq);
 		} else {
-			logd("Invalid request code %d from %08x", req, whom);
+			clogd("Invalid request code %d from %08x", req, whom);
 			r = -E_INVAL;
 		}
 		ipc_send(whom, r, pg, perm);
