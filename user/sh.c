@@ -313,7 +313,7 @@ umain(int argc, char **argv)
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
-			logp("# %s\n", buf);
+			logp("# %s", buf);
 		if (debug)
 			clogd("BEFORE FORK\n");
 		if ((r = fork()) < 0)

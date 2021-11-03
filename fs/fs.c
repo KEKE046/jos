@@ -95,7 +95,7 @@ check_bitmap(void)
 	assert(!block_is_free(0));
 	assert(!block_is_free(1));
 
-	logd("bitmap is good");
+	clogd("bitmap is good");
 }
 
 // --------------------------------------------------------------

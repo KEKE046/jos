@@ -128,9 +128,9 @@ void	wait(envid_t env);
 #define	O_EXCL		0x0400		/* error if already exists */
 #define O_MKDIR		0x0800		/* create directory, not regular file */
 
-#define logd(fmt,...) printf(AT_BRI_BLK fmt AT_RESET,##__VA_ARGS__)
-#define logi(fmt,...) printf(AT_BRI_GRN fmt AT_RESET,##__VA_ARGS__)
-#define logp(fmt,...) printf(AT_BRI_MAG fmt AT_RESET,##__VA_ARGS__)
-#define logw(fmt,...) printf(AT_BRI_YLW fmt AT_RESET,##__VA_ARGS__)
-#define loge(fmt,...) printf(AT_BRI_RED fmt AT_RESET,##__VA_ARGS__)
+#define logd(fmt,...) printf(AT_BRI_BLK fmt AT_RESET "\n",##__VA_ARGS__)
+#define logi(fmt,...) printf(AT_BRI_GRN fmt AT_RESET "\n",##__VA_ARGS__)
+#define logp(fmt,...) printf(AT_BRI_MAG fmt AT_RESET "\n",##__VA_ARGS__)
+#define logw(fmt,...) printf(AT_BRI_YLW fmt AT_RESET "\n",##__VA_ARGS__)
+#define loge(fmt,...) printf(AT_BRI_RED fmt AT_RESET "\n",##__VA_ARGS__)
 #endif	// !JOS_INC_LIB_H

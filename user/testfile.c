@@ -83,7 +83,7 @@ umain(int argc, char **argv)
 		panic("file_read after file_write returned wrong length: %d", r);
 	if (strcmp(buf, msg) != 0)
 		panic("file_read after file_write returned wrong data");
-	logd("file_read after file_write is good");
+	clogd("file_read after file_write is good");
 
 	// Now we'll try out open
 	if ((r = open("/not-found", O_RDONLY)) < 0 && r != -E_NOT_FOUND)
