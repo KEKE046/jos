@@ -47,6 +47,7 @@ free_block(uint32_t blockno)
 	if (blockno == 0)
 		panic("attempt to free zero block");
 	bitmap[blockno/32] |= 1<<(blockno%32);
+	flush_block(&bitmap[blockno/32]); // Here write through is used, TODO: Implement Journal
 }
 
 // Search the bitmap for a free block and allocate it.  When you
@@ -70,6 +71,7 @@ alloc_block(void)
 	for(int i = 0; i < super->s_nblocks; i++) {
 		if(block_is_free(i)) {
 			bitmap[i / 32] &= ~(1 << (i % 32));
+			flush_block(&bitmap[i / 32]); // Here write through is used, TODO: Implement Journal
 			return i;
 		}
 	}
@@ -157,6 +159,7 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 			int blockno = alloc_block();
 			ckret(blockno);
 			memset(diskaddr(blockno), 0, BLKSIZE);
+			flush_block(diskaddr(blockno)); // Here write through is used, TODO: Implement Journal
 			f->f_indirect = blockno;
 		}
 		uint32_t blockno = f->f_indirect;

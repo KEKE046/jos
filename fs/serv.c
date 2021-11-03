@@ -211,12 +211,12 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	struct Fsret_read *ret = &ipc->readRet;
 
 	if (debug)
-		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
+		logd("serve_read %08x %08x %08x", envid, req->req_fileid, req->req_n);
 
 	// Lab 5: Your code here:
 
 	struct OpenFile * o;
-	ckret(openfile_lookup(envid, req->req_fileid, &o) < 0);
+	ckret(openfile_lookup(envid, req->req_fileid, &o));
 	ssize_t count = file_read(o->o_file, ret->ret_buf, req->req_n, o->o_fd->fd_offset);
 	o->o_fd->fd_offset += count;
 	return count;
@@ -231,12 +231,13 @@ int
 serve_write(envid_t envid, struct Fsreq_write *req)
 {
 	if (debug)
-		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
+		logd("serve_write %08x %08x %08x", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
 	// panic("serve_write not implemented");
 	struct OpenFile * o;
-	ckret(openfile_lookup(envid, req->req_fileid, &o) < 0);
+	astret(req->req_n < sizeof(req->req_buf), -E_INVAL);
+	ckret(openfile_lookup(envid, req->req_fileid, &o));
 	ssize_t count = file_write(o->o_file, req->req_buf, req->req_n, o->o_fd->fd_offset);
 	o->o_fd->fd_offset += count;
 	return count;
@@ -312,12 +313,12 @@ serve(void)
 		perm = 0;
 		req = ipc_recv((int32_t *) &whom, fsreq, &perm);
 		if (debug)
-			cprintf("fs req %d from %08x [page %08x: %s]\n",
+			logd("fs req %d from %08x [page %08x: %s]",
 				req, whom, uvpt[PGNUM(fsreq)], fsreq);
 
 		// All requests must contain an argument page
 		if (!(perm & PTE_P)) {
-			cprintf("Invalid request from %08x: no argument page\n",
+			logd("Invalid request from %08x: no argument page",
 				whom);
 			continue; // just leave it hanging...
 		}
@@ -328,7 +329,7 @@ serve(void)
 		} else if (req < ARRAY_SIZE(handlers) && handlers[req]) {
 			r = handlers[req](whom, fsreq);
 		} else {
-			cprintf("Invalid request code %d from %08x\n", req, whom);
+			logd("Invalid request code %d from %08x", req, whom);
 			r = -E_INVAL;
 		}
 		ipc_send(whom, r, pg, perm);
