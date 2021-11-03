@@ -141,7 +141,7 @@ spawn(const char *prog, const char **argv)
 
 	if ((r = sys_env_set_status(child, ENV_RUNNABLE)) < 0)
 		panic("sys_env_set_status: %e", r);
-
+	
 	return child;
 
 error:
@@ -283,22 +283,22 @@ map_segment(envid_t child, uintptr_t va, size_t memsz,
 	}
 
 	for (i = 0; i < memsz; i += PGSIZE) {
-		if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
-			return r;
 		if (i >= filesz) {
-			memset(UTEMP, 0, PGSIZE);
+			// allocate a blank page
+			if ((r = sys_page_alloc(child, (void*) (va + i), perm)) < 0)
+				return r;
 		} else {
 			// from file
+			if ((r = sys_page_alloc(0, UTEMP, PTE_P|PTE_U|PTE_W)) < 0)
+				return r;
 			if ((r = seek(fd, fileoffset + i)) < 0)
 				return r;
-			size_t payload_size = MIN(PGSIZE, filesz-i);
-			if ((r = readn(fd, UTEMP, payload_size)) < 0)
+			if ((r = readn(fd, UTEMP, MIN(PGSIZE, filesz-i))) < 0)
 				return r;
-			memset(UTEMP + payload_size, 0, PGSIZE - payload_size);
+			if ((r = sys_page_map(0, UTEMP, child, (void*) (va + i), perm)) < 0)
+				panic("spawn: sys_page_map data: %e", r);
+			sys_page_unmap(0, UTEMP);
 		}
-		if ((r = sys_page_map(0, UTEMP, child, (void*)(va + i), perm)) < 0)
-			panic("spawn: sys_page_map data: %e", r);
-		sys_page_unmap(0, UTEMP);
 	}
 	return 0;
 }
@@ -314,8 +314,6 @@ copy_shared_pages(envid_t child)
 		for(size_t j = 0; j < NPTENTRIES; j++) {
 			pte_t pte = get_pte(i, j);
 			void * pgaddr = PGADDR(i, j, 0);
-			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE))    // ignore UXSTACK
-				continue;
 			if(!is_masked(pte, PTE_P | PTE_U))            // user not accessable
 				continue;
 			if(is_masked(pte, PTE_SHARE)) {
@@ -323,7 +321,6 @@ copy_shared_pages(envid_t child)
 			}
 		}
 	}
-
 	return 0;
 }
 

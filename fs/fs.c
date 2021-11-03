@@ -20,7 +20,7 @@ check_super(void)
 	if (super->s_nblocks > DISKSIZE/BLKSIZE)
 		panic("file system is too large");
 
-	cprintf("superblock is good\n");
+	clogd("superblock is good");
 }
 
 // --------------------------------------------------------------
@@ -95,7 +95,7 @@ check_bitmap(void)
 	assert(!block_is_free(0));
 	assert(!block_is_free(1));
 
-	cprintf("bitmap is good\n");
+	logd("bitmap is good");
 }
 
 // --------------------------------------------------------------

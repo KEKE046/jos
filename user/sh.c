@@ -35,7 +35,7 @@ again:
 
 		case 'w':	// Add an argument
 			if (argc == MAXARGS) {
-				cprintf("too many arguments\n");
+				cloge("too many arguments");
 				exit();
 			}
 			argv[argc++] = t;
@@ -44,7 +44,7 @@ again:
 		case '<':	// Input redirection
 			// Grab the filename from the argument list
 			if (gettoken(0, &t) != 'w') {
-				cprintf("syntax error: < not followed by word\n");
+				cloge("syntax error: < not followed by word");
 				exit();
 			}
 			// Open 't' for reading as file descriptor 0
@@ -57,8 +57,8 @@ again:
 
 			// LAB 5: Your code here.
 			// panic("< redirection not implemented");
-			if ((fd = open(t, O_WRONLY|O_CREAT|O_TRUNC)) < 0) {
-				cprintf("open %s for write: %e", t, fd);
+			if ((fd = open(t, O_RDONLY)) < 0) {
+				cloge("open %s for read: %e", t, fd);
 				exit();
 			}
 			if (fd != 0) {
@@ -70,11 +70,11 @@ again:
 		case '>':	// Output redirection
 			// Grab the filename from the argument list
 			if (gettoken(0, &t) != 'w') {
-				cprintf("syntax error: > not followed by word\n");
+				cloge("syntax error: > not followed by word");
 				exit();
 			}
 			if ((fd = open(t, O_WRONLY|O_CREAT|O_TRUNC)) < 0) {
-				cprintf("open %s for write: %e", t, fd);
+				cloge("open %s for write: %e", t, fd);
 				exit();
 			}
 			if (fd != 1) {
@@ -85,13 +85,13 @@ again:
 
 		case '|':	// Pipe
 			if ((r = pipe(p)) < 0) {
-				cprintf("pipe: %e", r);
+				cloge("pipe: %e", r);
 				exit();
 			}
 			if (debug)
-				cprintf("PIPE: %d %d\n", p[0], p[1]);
+				clogd("PIPE: %d %d", p[0], p[1]);
 			if ((r = fork()) < 0) {
-				cprintf("fork: %e", r);
+				cloge("fork: %e", r);
 				exit();
 			}
 			if (r == 0) {
@@ -153,7 +153,7 @@ runit:
 
 	// Spawn the command!
 	if ((r = spawn(argv[0], (const char**) argv)) < 0)
-		cprintf("spawn %s: %e\n", argv[0], r);
+		cloge("spawn %s: %e", argv[0], r);
 
 	// In the parent, close all file descriptors and wait for the
 	// spawned command to exit.
@@ -202,12 +202,12 @@ _gettoken(char *s, char **p1, char **p2)
 
 	if (s == 0) {
 		if (debug > 1)
-			cprintf("GETTOKEN NULL\n");
+			clogd("GETTOKEN NULL");
 		return 0;
 	}
 
 	if (debug > 1)
-		cprintf("GETTOKEN: %s\n", s);
+		clogd("GETTOKEN: %s", s);
 
 	*p1 = 0;
 	*p2 = 0;
@@ -216,7 +216,7 @@ _gettoken(char *s, char **p1, char **p2)
 		*s++ = 0;
 	if (*s == 0) {
 		if (debug > 1)
-			cprintf("EOL\n");
+			clogd("EOL");
 		return 0;
 	}
 	if (strchr(SYMBOLS, *s)) {
@@ -225,7 +225,7 @@ _gettoken(char *s, char **p1, char **p2)
 		*s++ = 0;
 		*p2 = s;
 		if (debug > 1)
-			cprintf("TOK %c\n", t);
+			clogd("TOK %c", t);
 		return t;
 	}
 	*p1 = s;
@@ -235,7 +235,7 @@ _gettoken(char *s, char **p1, char **p2)
 	if (debug > 1) {
 		t = **p2;
 		**p2 = 0;
-		cprintf("WORD: %s\n", *p1);
+		clogd("WORD: %s", *p1);
 		**p2 = t;
 	}
 	return 'w';
@@ -261,7 +261,7 @@ gettoken(char *s, char **p1)
 void
 usage(void)
 {
-	cprintf("usage: sh [-dix] [command-file]\n");
+	cloge("usage: sh [-dix] [command-file]");
 	exit();
 }
 
@@ -299,28 +299,27 @@ umain(int argc, char **argv)
 	}
 	if (interactive == '?')
 		interactive = iscons(0);
-
 	while (1) {
 		char *buf;
 
 		buf = readline(interactive ? AT_BRI_GRN "$ " AT_RESET : NULL);
 		if (buf == NULL) {
 			if (debug)
-				cprintf("EXITING\n");
+				clogd("EXITING");
 			exit();	// end of file
 		}
 		if (debug)
-			cprintf("LINE: %s\n", buf);
+			clogd("LINE: %s", buf);
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
-			printf("# %s\n", buf);
+			logp("# %s\n", buf);
 		if (debug)
-			cprintf("BEFORE FORK\n");
+			clogd("BEFORE FORK\n");
 		if ((r = fork()) < 0)
 			panic("fork: %e", r);
 		if (debug)
-			cprintf("FORK: %d\n", r);
+			clogd("FORK: %d", r);
 		if (r == 0) {
 			runcmd(buf);
 			exit();

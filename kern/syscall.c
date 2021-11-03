@@ -380,8 +380,8 @@ sys_ipc_recv(void *dstva)
 	e->env_ipc_dstva = dstva;
 	e->env_ipc_value = 0;
 	e->env_tf.tf_regs.reg_eax = 0;
-	e->env_ipc_recving = 1;
 	e->env_status = ENV_NOT_RUNNABLE;
+	e->env_ipc_recving = 1;
 	sched_yield();
 	return 0;
 }
