@@ -72,42 +72,50 @@ enum {
 	FSREQ_REMOVE,
 	FSREQ_SYNC
 };
-
+struct Fsreq_open {
+	char req_path[MAXPATHLEN];
+	int req_omode;
+};
+struct Fsreq_set_size {
+	int req_fileid;
+	off_t req_size;
+};
+struct Fsreq_read {
+	int req_fileid;
+	size_t req_n;
+};
+struct Fsret_read {
+	char ret_buf[PGSIZE];
+};
+struct Fsreq_write {
+	int req_fileid;
+	size_t req_n;
+	char req_buf[PGSIZE - (sizeof(int) + sizeof(size_t))];
+};
+struct Fsreq_stat {
+	int req_fileid;
+};
+struct Fsret_stat {
+	char ret_name[MAXNAMELEN];
+	off_t ret_size;
+	int ret_isdir;
+};
+struct Fsreq_flush {
+	int req_fileid;
+};
+struct Fsreq_remove {
+	char req_path[MAXPATHLEN];
+};
 union Fsipc {
-	struct Fsreq_open {
-		char req_path[MAXPATHLEN];
-		int req_omode;
-	} open;
-	struct Fsreq_set_size {
-		int req_fileid;
-		off_t req_size;
-	} set_size;
-	struct Fsreq_read {
-		int req_fileid;
-		size_t req_n;
-	} read;
-	struct Fsret_read {
-		char ret_buf[PGSIZE];
-	} readRet;
-	struct Fsreq_write {
-		int req_fileid;
-		size_t req_n;
-		char req_buf[PGSIZE - (sizeof(int) + sizeof(size_t))];
-	} write;
-	struct Fsreq_stat {
-		int req_fileid;
-	} stat;
-	struct Fsret_stat {
-		char ret_name[MAXNAMELEN];
-		off_t ret_size;
-		int ret_isdir;
-	} statRet;
-	struct Fsreq_flush {
-		int req_fileid;
-	} flush;
-	struct Fsreq_remove {
-		char req_path[MAXPATHLEN];
-	} remove;
+	struct Fsreq_open open;
+	struct Fsreq_set_size set_size;
+	struct Fsreq_read read;
+	struct Fsret_read readRet;
+	struct Fsreq_write write;
+	struct Fsreq_stat stat;
+	struct Fsret_stat statRet;
+	struct Fsreq_flush flush;
+	struct Fsreq_remove remove;
 
 	// Ensure Fsipc is one page
 	char _pad[PGSIZE];
