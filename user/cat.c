@@ -27,7 +27,7 @@ umain(int argc, char **argv)
 		for (i = 1; i < argc; i++) {
 			f = open(argv[i], O_RDONLY);
 			if (f < 0)
-				printf("can't open %s: %e\n", argv[i], f);
+				loge("can't open %s: %e", argv[i], f);
 			else {
 				cat(f, argv[i]);
 				close(f);

@@ -216,6 +216,7 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	// Lab 5: Your code here:
 
 	struct OpenFile * o;
+	astret(req->req_n <= sizeof(ret->ret_buf), -E_INVAL);
 	ckret(openfile_lookup(envid, req->req_fileid, &o));
 	ssize_t count = file_read(o->o_file, ret->ret_buf, req->req_n, o->o_fd->fd_offset);
 	o->o_fd->fd_offset += count;
@@ -236,7 +237,7 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 	// LAB 5: Your code here.
 	// panic("serve_write not implemented");
 	struct OpenFile * o;
-	astret(req->req_n < sizeof(req->req_buf), -E_INVAL);
+	astret(req->req_n <= sizeof(req->req_buf), -E_INVAL);
 	ckret(openfile_lookup(envid, req->req_fileid, &o));
 	ssize_t count = file_write(o->o_file, req->req_buf, req->req_n, o->o_fd->fd_offset);
 	o->o_fd->fd_offset += count;
