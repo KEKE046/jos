@@ -12,7 +12,7 @@ num(int f, const char *s)
 
 	while ((n = read(f, &c, 1)) > 0) {
 		if (bol) {
-			printf("%5d ", ++line);
+			printf(AT_BRI_MAG "%5d " AT_RESET, ++line);
 			bol = 0;
 		}
 		if ((r = write(1, &c, 1)) != 1)

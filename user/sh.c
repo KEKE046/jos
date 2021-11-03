@@ -1,4 +1,5 @@
 #include <inc/lib.h>
+#include <inc/ansiterm.h>
 
 #define BUFSIZ 1024		/* Find the buffer overrun bug! */
 int debug = 0;
@@ -294,7 +295,7 @@ umain(int argc, char **argv)
 	while (1) {
 		char *buf;
 
-		buf = readline(interactive ? "$ " : NULL);
+		buf = readline(interactive ? AT_BRI_GRN "$ " AT_RESET : NULL);
 		if (buf == NULL) {
 			if (debug)
 				cprintf("EXITING\n");

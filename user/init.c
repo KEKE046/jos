@@ -25,18 +25,17 @@ umain(int argc, char **argv)
 	int i, r, x, want;
 	char args[256];
 
-	cprintf("init: running\n");
+	logp("init: running");
 
 	want = 0xf989e;
 	if ((x = sum((char*)&data, sizeof data)) != want)
-		cprintf("init: data is not initialized: got sum %08x wanted %08x\n",
-			x, want);
+		logw("init: data is not initialized: got sum %08x wanted %08x", x, want);
 	else
-		cprintf("init: data seems okay\n");
+		logi("init: data seems okay");
 	if ((x = sum(bss, sizeof bss)) != 0)
-		cprintf("bss is not initialized: wanted sum 0 got %08x\n", x);
+		logw("bss is not initialized: wanted sum 0 got %08x", x);
 	else
-		cprintf("init: bss seems okay\n");
+		logi("init: bss seems okay");
 
 	// output in one syscall per line to avoid output interleaving 
 	strcat(args, "init: args:");
@@ -58,10 +57,10 @@ umain(int argc, char **argv)
 	if ((r = dup(0, 1)) < 0)
 		panic("dup: %e", r);
 	while (1) {
-		cprintf("init: starting sh\n");
+		logp("init: starting sh");
 		r = spawnl("/sh", "sh", (char*)0);
 		if (r < 0) {
-			cprintf("init: spawn sh: %e\n", r);
+			loge("init: spawn sh: %e", r);
 			continue;
 		}
 		wait(r);

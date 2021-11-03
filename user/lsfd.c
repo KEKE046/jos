@@ -3,7 +3,7 @@
 void
 usage(void)
 {
-	cprintf("usage: lsfd [-1]\n");
+	loge("usage: lsfd [-1]");
 	exit();
 }
 
@@ -24,11 +24,11 @@ umain(int argc, char **argv)
 	for (i = 0; i < 32; i++)
 		if (fstat(i, &st) >= 0) {
 			if (usefprint)
-				fprintf(1, "fd %d: name %s isdir %d size %d dev %s\n",
+				fprintf(1, AT_MAG"fd %d"AT_RESET":"AT_BRI_GRN" name %s" AT_GRY" isdir %d size %d "AT_BRI_YLW"dev %s\n"AT_RESET,
 					i, st.st_name, st.st_isdir,
 					st.st_size, st.st_dev->dev_name);
 			else
-				cprintf("fd %d: name %s isdir %d size %d dev %s\n",
+				cprintf(   AT_MAG"fd %d"AT_RESET":"AT_BRI_GRN" name %s" AT_GRY" isdir %d size %d "AT_BRI_YLW"dev %s\n"AT_RESET,
 					i, st.st_name, st.st_isdir,
 					st.st_size, st.st_dev->dev_name);
 		}
