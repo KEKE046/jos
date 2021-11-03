@@ -14,6 +14,7 @@ umain(int argc, char **argv)
 	if ((fd = open("/motd", O_RDONLY)) < 0)
 		panic("icode: open /motd: %e", fd);
 
+	clogp(AT_ERASE_ALL AT_CUR_POS_HOME);
 	clogp("icode: read /motd");
 	while ((n = read(fd, buf, sizeof buf-1)) > 0)
 		sys_cputs(buf, n);
