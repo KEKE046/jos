@@ -109,6 +109,7 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 
 	void * ret = nextfree;
+	assert_panic((uintptr_t)ret - KERNBASE < 16 * NPTENTRIES * PGSIZE, "boot alloc fail, please allocate more entrypgdir");
 	nextfree = ROUNDUP(nextfree + n, PGSIZE);
 
 	return ret;
