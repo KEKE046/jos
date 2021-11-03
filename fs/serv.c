@@ -110,7 +110,7 @@ serve_open(envid_t envid, struct Fsreq_open *req,
 	struct OpenFile *o;
 
 	if (debug)
-		cprintf("serve_open %08x %s 0x%x\n", envid, req->req_path, req->req_omode);
+		logd("serve_open %08x %s 0x%x", envid, req->req_path, req->req_omode);
 
 	// Copy in the path, making sure it's null-terminated
 	memmove(path, req->req_path, MAXPATHLEN);
@@ -119,7 +119,7 @@ serve_open(envid_t envid, struct Fsreq_open *req,
 	// Find an open file ID
 	if ((r = openfile_alloc(&o)) < 0) {
 		if (debug)
-			cprintf("openfile_alloc failed: %e", r);
+			logd("openfile_alloc failed: %e", r);
 		return r;
 	}
 	fileid = r;
@@ -130,14 +130,14 @@ serve_open(envid_t envid, struct Fsreq_open *req,
 			if (!(req->req_omode & O_EXCL) && r == -E_FILE_EXISTS)
 				goto try_open;
 			if (debug)
-				cprintf("file_create failed: %e", r);
+				logd("file_create failed: %e", r);
 			return r;
 		}
 	} else {
 try_open:
 		if ((r = file_open(path, &f)) < 0) {
 			if (debug)
-				cprintf("file_open failed: %e", r);
+				logd("file_open failed: %e", r);
 			return r;
 		}
 	}
@@ -146,13 +146,13 @@ try_open:
 	if (req->req_omode & O_TRUNC) {
 		if ((r = file_set_size(f, 0)) < 0) {
 			if (debug)
-				cprintf("file_set_size failed: %e", r);
+				logd("file_set_size failed: %e", r);
 			return r;
 		}
 	}
 	if ((r = file_open(path, &f)) < 0) {
 		if (debug)
-			cprintf("file_open failed: %e", r);
+			logd("file_open failed: %e", r);
 		return r;
 	}
 
@@ -166,7 +166,7 @@ try_open:
 	o->o_mode = req->req_omode;
 
 	if (debug)
-		cprintf("sending success, page %08x\n", (uintptr_t) o->o_fd);
+		logd("sending success, page %08x", (uintptr_t) o->o_fd);
 
 	// Share the FD page with the caller by setting *pg_store,
 	// store its permission in *perm_store
@@ -214,7 +214,12 @@ serve_read(envid_t envid, union Fsipc *ipc)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// Lab 5: Your code here:
-	return 0;
+
+	struct OpenFile * o;
+	ckret(openfile_lookup(envid, req->req_fileid, &o) < 0);
+	ssize_t count = file_read(o->o_file, ret->ret_buf, req->req_n, o->o_fd->fd_offset);
+	o->o_fd->fd_offset += count;
+	return count;
 }
 
 
@@ -229,7 +234,12 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
-	panic("serve_write not implemented");
+	// panic("serve_write not implemented");
+	struct OpenFile * o;
+	ckret(openfile_lookup(envid, req->req_fileid, &o) < 0);
+	ssize_t count = file_write(o->o_file, req->req_buf, req->req_n, o->o_fd->fd_offset);
+	o->o_fd->fd_offset += count;
+	return count;
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the
