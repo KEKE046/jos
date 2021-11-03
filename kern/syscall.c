@@ -224,6 +224,7 @@ sys_page_alloc(envid_t envid, void *va, int perm)
 	struct PageInfo * pg = page_alloc(0);
 	if(pg == NULL) return -E_NO_MEM;
 	ckret(usr_mem_perm_check(perm));
+	memset(page2kva(pg), 0, PGSIZE);
 	ckret(page_insert(e->env_pgdir, pg, va, perm));
 	return 0;
 }
