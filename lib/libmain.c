@@ -13,9 +13,9 @@ _log(const char *file, int line, const char * color, const char *fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
 	// cprintf("[%s:%d]: ", file, line);
-	cprintf("%s", color);
-	vcprintf(fmt, ap);
-	cprintf("\n" AT_RESET);
+	printf("%s", color);
+	vfprintf(1, fmt, ap);
+	printf("\n" AT_RESET);
 	va_end(ap);
 }
 

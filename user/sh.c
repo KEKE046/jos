@@ -61,7 +61,6 @@ again:
 				loge("open %s for read: %e", t, fd);
 				exit();
 			}
-			logd("fd: %d", fd);
 			if (fd != 0) {
 				dup(fd, 0);
 				close(fd);
@@ -300,7 +299,6 @@ umain(int argc, char **argv)
 	}
 	if (interactive == '?')
 		interactive = iscons(0);
-
 	while (1) {
 		char *buf;
 
@@ -315,7 +313,7 @@ umain(int argc, char **argv)
 		if (buf[0] == '#')
 			continue;
 		if (echocmds)
-			printf("# %s", buf);
+			printf("# %s\n", buf);
 		if (debug)
 			logd("BEFORE FORK\n");
 		if ((r = fork()) < 0)

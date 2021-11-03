@@ -72,14 +72,14 @@ wrong(int rfd, int kfd, int off)
 	seek(rfd, off);
 	seek(kfd, off);
 
-	cprintf("shell produced incorrect output.\n");
-	cprintf("expected:\n===\n");
+	loge("shell produced incorrect output.");
+	logi("expected:\n===");
 	while ((n = read(kfd, buf, sizeof buf-1)) > 0)
 		sys_cputs(buf, n);
-	cprintf("===\ngot:\n===\n");
+	logi("===\ngot:\n===");
 	while ((n = read(rfd, buf, sizeof buf-1)) > 0)
 		sys_cputs(buf, n);
-	cprintf("===\n");
+	logi("===");
 	exit();
 }
 

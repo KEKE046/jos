@@ -1,5 +1,4 @@
-     _  ___  ____  
-    | |/ _ \/ ___|   This is /motd, the message of the day.
- _  | | | | \___ \ 
-| |_| | |_| |___) |  
- \___/ \___/|____/   Welcome to the JOS kernel, now with a file system!
+This is /motd, the message of the day.
+
+Welcome to the JOS kernel, now with a file system!
+
