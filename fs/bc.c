@@ -81,10 +81,11 @@ flush_block(void *addr)
 
 	// LAB 5: Your code here.
 	// panic("flush_block not implemented");
-	assert(va_is_mapped(addr) && va_is_dirty(addr));
-	addr = (void*)ROUNDDOWN(addr, BLKSIZE);
-	assert(ide_write(blockno * BLKSECTS, addr, BLKSECTS) == 0);
-	assert(sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL) == 0);
+	if(va_is_mapped(addr) && va_is_dirty(addr)) {
+		addr = (void*)ROUNDDOWN(addr, BLKSIZE);
+		assert(ide_write(blockno * BLKSECTS, addr, BLKSECTS) == 0);
+		assert(sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL) == 0);
+	}
 }
 
 // Test that the block cache works, by smashing the superblock and
