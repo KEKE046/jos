@@ -1,9 +1,13 @@
 #include <inc/lib.h>
 #include <inc/elf.h>
+#include <inc/assert.h>
 
 #define UTEMP2USTACK(addr)	((void*) (addr) + (USTACKTOP - PGSIZE) - UTEMP)
 #define UTEMP2			(UTEMP + PGSIZE)
 #define UTEMP3			(UTEMP2 + PGSIZE)
+
+#define get_pde(idx)  (*(pde_t*)(PGADDR(PDX(UVPT), PDX(UVPT), (idx)*sizeof(pde_t))))
+#define get_pte(pde_idx, pte_idx)  (*(pte_t*)(PGADDR(PDX(UVPT), pde_idx, (pte_idx)*sizeof(pte_t))))
 
 // Helper functions for spawn.
 static int init_stack(envid_t child, const char **argv, uintptr_t *init_esp);
@@ -304,6 +308,22 @@ static int
 copy_shared_pages(envid_t child)
 {
 	// LAB 5: Your code here.
+	for(size_t i = 0; i < PDX(UTOP); i++) {
+		pde_t pde = get_pde(i);
+		if(!is_masked(pde, PTE_P)) continue;
+		for(size_t j = 0; j < NPTENTRIES; j++) {
+			pte_t pte = get_pte(i, j);
+			void * pgaddr = PGADDR(i, j, 0);
+			if(pgaddr == (void*)(UXSTACKTOP - PGSIZE))    // ignore UXSTACK
+				continue;
+			if(!is_masked(pte, PTE_P | PTE_U))            // user not accessable
+				continue;
+			if(is_masked(pte, PTE_SHARE)) {
+				ckret(sys_page_map(0, pgaddr, child, pgaddr, pte & PTE_SYSCALL));
+			}
+		}
+	}
+
 	return 0;
 }
 

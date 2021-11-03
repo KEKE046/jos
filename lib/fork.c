@@ -110,12 +110,15 @@ fork(void)
 				continue;
 			if(!is_masked(pte, PTE_P | PTE_U))            // user not accessable
 				continue;
-			if(is_masked(pte, PTE_W) || is_masked(pte, PTE_COW)) {  // COW page
+			if(is_masked(pte, PTE_SHARE)) {
+				ckret(sys_page_map(0, pgaddr, envid, pgaddr, pte & PTE_SYSCALL));
+				continue;
+			}
+			if(is_masked(pte, PTE_W) || is_masked(pte, PTE_COW)) {
 				ckret(duppage(envid, pgaddr));
+				continue;
 			}
-			else{
-				ckret(sys_page_map(0, pgaddr, envid, pgaddr, PTE_FLAGS(pte)));
-			}
+			ckret(sys_page_map(0, pgaddr, envid, pgaddr, pte & PTE_SYSCALL));
 		}
 	}
 
