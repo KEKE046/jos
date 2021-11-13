@@ -101,6 +101,8 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 	cprintf("Stack backtrace:\n");
 	struct Eipdebuginfo info;
 	volatile uint32_t * ebp = (uint32_t*)read_ebp(), eip;
+	uint32_t cr3 = rcr3();
+	if(curenv) lcr3(PADDR(curenv->env_pgdir));
 	int errno = 0;
 	do {
 		eip = *(ebp + 1);
@@ -108,6 +110,7 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 			loge("debuginfo_eip(%p) %e", eip - 4, errno);
 			break;
 		}
+		cprintf("  ebp %08x eip %08x\n", ebp, eip);
 		cprintf("  ebp %08x eip %08x args %08x %08x %08x %08x\n",
 			ebp, eip, *(ebp + 2), *(ebp + 3), *(ebp + 4), *(ebp + 5));
 		cprintf("        %s:%d: ", info.eip_file, info.eip_line);
@@ -118,6 +121,7 @@ mon_backtrace(int argc, char **argv, struct Trapframe *tf)
 		if(ebp == NULL) break;
 		ebp = (uint32_t*)*ebp;
 	} while(ebp);
+	lcr3(cr3);
 	return 0;
 }
 

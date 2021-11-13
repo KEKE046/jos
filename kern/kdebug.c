@@ -143,7 +143,7 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 		// Make sure this memory is valid.
 		// Return -1 if it is not.  Hint: Call user_mem_check.
 		// LAB 3: Your code here.
-		if((errno=user_mem_check(curenv, usd, PTSIZE - USTABDATA, PTE_U)) < 0) {
+		if((errno=user_mem_check(curenv, usd, PGSIZE, PTE_P | PTE_U)) < 0) {
 			return errno;
 		}
 
@@ -154,10 +154,10 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 
 		// Make sure the STABS and string table memory is valid.
 		// LAB 3: Your code here.
-		if((errno=user_mem_check(curenv, stabs, stab_end - stabs, PTE_U)) < 0) {
+		if((errno=user_mem_check(curenv, stabs, stab_end - stabs, PTE_P | PTE_U)) < 0) {
 			return errno;
 		}
-		if((errno=user_mem_check(curenv, stabs, stabstr_end - stabstr, PTE_U)) < 0) {
+		if((errno=user_mem_check(curenv, stabs, stabstr_end - stabstr, PTE_P | PTE_U)) < 0) {
 			return errno;
 		}
 	}
