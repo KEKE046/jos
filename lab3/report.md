@@ -1,4 +1,4 @@
-# Report for lab2, Kexing Zhou, 1900013008
+# Report for lab3, Kexing Zhou, 1900013008
 
 [TOC]
 
@@ -181,7 +181,7 @@ env_run(struct Env *e) {
 
 nothing to report.
 
-### Exercise 4 (with Challenge 4)
+### Exercise 4 & Challenge 1
 
 I modified the `PLACEHANDLER` macro to place trap message in `.data` segmeng. The message contains functoin name, trap number, privilege level. 
 ```cpp
@@ -315,7 +315,7 @@ trap_dispatch(struct Trapframe *tf) {
 }
 ```
 
-### Challenge 6
+### Challenge 2
 
 The the `TF` flag in `eflags` register is set to 1, the processor goes into Trap Mode. In Trap Mode, after each assembly code is executed, the processer will cause a `DEBUG` interrupt.
 
