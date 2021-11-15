@@ -1,6 +1,3 @@
-LABS=lab1 lab2 lab3 lab4
-PDFS=$(addsuffix /report.pdf,$(LABS))
-
 PANDOC:=pandoc \
 	--standalone \
 	--from=gfm+pipe_tables \
@@ -13,17 +10,19 @@ PANDOC:=pandoc \
 	-V titlepage:true \
 	-V code-block-font-size:\\tiny
 
+PFX:=$(shell pwd)/handin/1900013008-周可行-
+
 sync:
 	git add . && git commit -am "update `date`" && git push
 
-%.pdf: %.md
-	$(PANDOC) $@.md -o $@.pdf
+%/report.pdf: %/report.md
+	cd $* && $(PANDOC) report.md -o report.pdf
 
 handin-%: %/report.pdf
-	cd .. && git archive $* -o note/$*/code.tar.gz
-	tar cvf $*.tar.gz $*
-	cp $*/report.pdf ./
-	dolphin .
+	cd .. && git archive $* -o $(PFX)code-$*.tar.gz
+	tar cvf $(PFX)report-$*.tar.gz $*
+	cp $*/report.pdf $(PFX)report-$*.pdf
+	dolphin handin
 
 clean:
 	rm -rf $(wildcard **/*.tar.gz) $(wildcard *.tar.gz)
