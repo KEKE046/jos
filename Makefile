@@ -12,7 +12,7 @@ PANDOC:=pandoc \
 
 PFX:=$(shell pwd)/handin/1900013008-周可行-
 
-$(info $(wildcard -d))
+$(info $(wildcard -d *))
 
 sync:
 	git add . && git commit -am "update `date`" && git push
