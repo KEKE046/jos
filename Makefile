@@ -12,17 +12,19 @@ PANDOC:=pandoc \
 
 PFX:=$(shell pwd)/handin/1900013008-周可行-
 
+$(info $(wildcard -d))
+
 sync:
 	git add . && git commit -am "update `date`" && git push
 
-%/report.pdf: %/report.md
-	cd $* && $(PANDOC) report.md -o report.pdf
+%.pdf: %.md
+	cd $(shell dirname $*) && $(PANDOC) $(shell basename $*).md -o $(shell basename $*).pdf
 
 handin-%: %/report.pdf
-	cd .. && git archive $* -o $(PFX)code-$*.tar.gz
-	tar cvf $(PFX)report-$*.tar.gz $*
-	cp $*/report.pdf $(PFX)report-$*.pdf
-	dolphin handin
+	cd .. && git archive $* -o $(PFX)$*-code.tar.gz
+	cp $*/report.pdf $(PFX)-$*-report.pdf
+	# tar cvf $(PFX)$*-report.tar.gz $*
 
 clean:
-	rm -rf $(wildcard **/*.tar.gz) $(wildcard *.tar.gz)
+	rm -rf handin/*
+	rm -rf */*.pdf

@@ -7,7 +7,7 @@
 ```
 Hardware Environment:
 Memory:         16GB
-Processor:      Intel® Core™ i7-8550U CPU @ 1.66GHz × 8
+Processor:      Intel Core i7-8550U CPU @ 1.66GHz 8
 GPU:            NVIDIA GeForce RTX 2070
 OS Type:        64 bit
 Disk:           924GB
