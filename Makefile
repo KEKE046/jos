@@ -1,3 +1,6 @@
+
+pdf: $(subst .md,.pdf,$(wildcard */*.md))
+
 PANDOC:=pandoc \
 	--standalone \
 	--from=gfm+pipe_tables \
@@ -10,21 +13,22 @@ PANDOC:=pandoc \
 	-V titlepage:true \
 	-V code-block-font-size:\\tiny
 
-PFX:=$(shell pwd)/handin/1900013008-周可行-
-
-$(info $(wildcard -d *))
-
-sync:
-	git add . && git commit -am "update `date`" && git push
-
 %.pdf: %.md
 	cd $(shell dirname $*) && $(PANDOC) $(shell basename $*).md -o $(shell basename $*).pdf
 
+sync: 
+	git add . && git commit -am "update `date`" && git push
+
+PFX:=$(shell pwd)/handin/1900013008-周可行-
+
 handin-%: %/report.pdf
 	cd .. && git archive $* -o $(PFX)$*-code.tar.gz
-	cp $*/report.pdf $(PFX)-$*-report.pdf
-	# tar cvf $(PFX)$*-report.tar.gz $*
+	cp $*/report.pdf $(PFX)$*-report.pdf
+	tar cvf $(PFX)$*-report.tar.gz $*
+	dolphin handin; true
 
 clean:
 	rm -rf handin/*
+
+realclean:
 	rm -rf */*.pdf
