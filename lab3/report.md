@@ -1,13 +1,11 @@
 # Report for lab3, Kexing Zhou, 1900013008
 
-[TOC]
-
 ## Environment Configuration
 
 ```
 Hardware Environment:
 Memory:         16GB
-Processor:      Intel® Core™ i7-8550U CPU @ 1.66GHz × 8
+Processor:      Intel Core i7-8550U CPU @ 1.66GHz 8
 GPU:            NVIDIA GeForce RTX 2070
 OS Type:        64 bit
 Disk:           924GB
@@ -38,6 +36,7 @@ $ sudo pacman -S riscv64-linux-gnu-binutils \
 ### Exercise 1
 
 The setup code in kern/pmap.c, Line 196.
+
 ```cpp
 // allocating the pages array 
 envs = boot_alloc(NENV * sizeof(*envs));
@@ -50,6 +49,7 @@ boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_P | PTE_U);
 ### Exercise 2
 
 #### env_init
+
 ```cpp
 void
 env_init(void) {
@@ -65,6 +65,7 @@ env_init(void) {
 ```
 
 #### env_setup_vm
+
 ```cpp
 static int
 env_setup_vm(struct Env *e) {
@@ -89,6 +90,7 @@ env_setup_vm(struct Env *e) {
 ```
 
 #### region_alloc
+
 ```cpp
 static void
 region_alloc(struct Env *e, void *va, size_t len) {
@@ -106,8 +108,8 @@ region_alloc(struct Env *e, void *va, size_t len) {
 ```
 
 #### load_icode
-```cpp
 
+```cpp
 static void
 region_copy(struct Env *e, void *dst, void *src, size_t len) {
 	uint32_t cr3 = rcr3();
@@ -143,6 +145,7 @@ load_icode(struct Env *e, uint8_t *binary) {
 ```
 
 #### env_create
+
 ```cpp
 void
 env_create(uint8_t *binary, enum EnvType type)
@@ -157,8 +160,8 @@ env_create(uint8_t *binary, enum EnvType type)
 ```
 
 #### env_run
-```cpp
 
+```cpp
 void
 env_run(struct Env *e) {
 	// change the state of curenv
@@ -184,8 +187,8 @@ nothing to report.
 ### Exercise 4 & Challenge 1
 
 I modified the `PLACEHANDLER` macro to place trap message in `.data` segmeng. The message contains functoin name, trap number, privilege level. 
-```cpp
 
+```cpp
 // The Privilege Level
 #define PL_KERNEL    0
 #define PL_DEVDRI1   1
@@ -215,6 +218,7 @@ I modified the `PLACEHANDLER` macro to place trap message in `.data` segmeng. Th
 ```
 
 The table entry is at a very begining, followed by the trap handler.
+
 ```nasm
 .data
 .global trapentry_table
@@ -283,6 +287,7 @@ When user want to use `int` command to make a software interrupt, his privilege 
 ### Exercise 5 & Exercise 6 & Exercise 7
 
 The trap dispatch function:
+
 ```cpp
 static void
 trap_dispatch(struct Trapframe *tf) {
@@ -442,6 +447,7 @@ page_fault_handler(struct Trapframe *tf)
 ```
 
 In my implementations, I found the assembly code of function `umain` is mysterious:
+
 ```nasm
 00800033 <umain>:
 void
@@ -475,4 +481,5 @@ There is a `pagefault` in the figure, that is because the `backtrace` will look 
 ### Exercise 10
 
 It works perfectly:
+
 ![](fig/2021-11-13-19-43-30.png)
