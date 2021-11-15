@@ -1,13 +1,23 @@
 LABS=lab1 lab2 lab3 lab4
 PDFS=$(addsuffix /report.pdf,$(LABS))
-$(info $(PDFS))
+
+PANDOC:=pandoc \
+	--standalone \
+	--from=gfm+pipe_tables \
+	--to=pdf \
+	-V geometry:margin=1in \
+	--shift-heading-level-by=-1 \
+	--table-of-contents \
+	--listings \
+	--template eisvogel \
+	-V titlepage:true \
+	-V code-block-font-size:\\tiny
 
 sync:
 	git add . && git commit -am "update `date`" && git push
 
-$(addsuffix /report.pdf,$(LABS)): %.pdf: %.md
-	pandoc-md2pdf $@.md -o $@.pdf
-
+%.pdf: %.md
+	$(PANDOC) $@.md -o $@.pdf
 
 handin-%: %/report.pdf
 	cd .. && git archive $* -o note/$*/code.tar.gz
